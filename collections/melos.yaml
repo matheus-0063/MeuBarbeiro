@@ -1,0 +1,5 @@
+name: meu_barbeiro_workspace
+
+packages:
+  - mobile/apps/**
+  - mobile/packages/**

@@ -1,0 +1,29 @@
+bin/
+obj/
+.DS_Store
+.idea/
+.vs/
+.vscode/
+
+# Flutter / Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+build/
+
+# Android / iOS generated
+**/android/.gradle/
+**/android/local.properties
+**/ios/Pods/
+**/ios/.symlinks/
+**/macos/Pods/
+
+# Environment
+.env
+.env.*
+
+# Database
+*.db
+*.db-shm
+*.db-wal
