@@ -1,6 +1,11 @@
 @MeuBarbeiro.Api_HostAddress = http://localhost:5039
 
-GET {{MeuBarbeiro.Api_HostAddress}}/weatherforecast/
+GET {{MeuBarbeiro.Api_HostAddress}}/api/v1/event-processing-audits?take=20
+Accept: application/json
+
+###
+
+GET {{MeuBarbeiro.Api_HostAddress}}/api/v1/event-processing-audits?eventName=AppointmentRequestedIntegrationEvent
 Accept: application/json
 
 ###
