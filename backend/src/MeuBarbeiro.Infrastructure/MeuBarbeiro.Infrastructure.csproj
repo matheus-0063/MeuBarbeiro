@@ -3,6 +3,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.2" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.2" />
+    <PackageReference Include="RabbitMQ.Client" Version="6.8.1" />
     <ProjectReference Include="..\MeuBarbeiro.Application\MeuBarbeiro.Application.csproj" />
     <ProjectReference Include="..\MeuBarbeiro.Domain\MeuBarbeiro.Domain.csproj" />
     <ProjectReference Include="..\MeuBarbeiro.Contracts\MeuBarbeiro.Contracts.csproj" />

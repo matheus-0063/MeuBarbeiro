@@ -23,9 +23,7 @@ public class AppointmentController(IAppointmentService appointmentService) : Bas
             return ValidationProblem();
         }
 
-        return CreatedAtAction(
-            nameof(GetAppointment),
-            new { version = "1.0", appointmentId = result.Data },
+        return CreatedAtAction(nameof(GetAppointment), new { version = "1.0", appointmentId = result.Data }, 
             new AppointmentIdResponseModel { AppointmentId = result.Data! });
     }
 

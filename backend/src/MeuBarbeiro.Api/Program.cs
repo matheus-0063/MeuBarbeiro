@@ -1,7 +1,9 @@
 using Asp.Versioning;
+using MeuBarbeiro.Application.Abstractions.Messaging;
 using MeuBarbeiro.Application.Abstractions.Persistence;
 using MeuBarbeiro.Application.Abstractions.Services;
 using MeuBarbeiro.Application.Services;
+using MeuBarbeiro.Infrastructure.Messaging;
 using MeuBarbeiro.Infrastructure.Persistence;
 using MeuBarbeiro.Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -27,6 +29,11 @@ builder.Services
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddSingleton<DatabaseSchemaInitializer>();
+builder.Services.Configure<RabbitMqOptions>(builder.Configuration.GetSection(RabbitMqOptions.SectionName));
+builder.Services.AddSingleton<IRabbitMqConnectionProvider, RabbitMqConnectionProvider>();
+builder.Services.AddSingleton<RabbitMqTopologyInitializer>();
+builder.Services.AddScoped<IEventPublisher, RabbitMqEventPublisher>();
 builder.Services.AddScoped<IAppointmentRepository, SqliteAppointmentRepository>();
 builder.Services.AddScoped<IAppointmentService, AppointmentService>();
 
@@ -35,7 +42,10 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    dbContext.Database.EnsureCreated();
+    var databaseSchemaInitializer = scope.ServiceProvider.GetRequiredService<DatabaseSchemaInitializer>();
+    var topologyInitializer = scope.ServiceProvider.GetRequiredService<RabbitMqTopologyInitializer>();
+    await databaseSchemaInitializer.EnsureSchemaAsync(dbContext);
+    topologyInitializer.Initialize();
 }
 
 if (app.Environment.IsDevelopment())

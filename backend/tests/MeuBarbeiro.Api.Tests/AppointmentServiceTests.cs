@@ -1,7 +1,9 @@
 using FluentValidation.Results;
+using MeuBarbeiro.Application.Abstractions.Messaging;
 using MeuBarbeiro.Application.Abstractions.Persistence;
 using MeuBarbeiro.Application.DTOs.Appointments;
 using MeuBarbeiro.Application.Services;
+using MeuBarbeiro.Contracts.Events;
 using MeuBarbeiro.Domain.Entities;
 using MeuBarbeiro.Domain.Enums;
 
@@ -13,7 +15,8 @@ public class AppointmentServiceTests
     public async Task CreateAppointment_ShouldReturnSuccessAndPendingStatus_WhenRepositoryAccepts()
     {
         var repository = new FakeAppointmentRepository();
-        var service = new AppointmentService(repository);
+        var publisher = new FakeEventPublisher();
+        var service = new AppointmentService(repository, publisher);
 
         var result = await service.CreateAppointment(BuildCreateRequest());
 
@@ -21,6 +24,8 @@ public class AppointmentServiceTests
         Assert.NotEqual(Guid.Empty, result.Data);
         Assert.NotNull(repository.LastAddedAppointment);
         Assert.Equal(AppointmentStatus.Pending, repository.LastAddedAppointment!.Status);
+        Assert.Single(publisher.PublishedMessages);
+        Assert.IsType<AppointmentRequestedIntegrationEvent>(publisher.PublishedMessages.Single());
     }
 
     [Fact]
@@ -30,12 +35,14 @@ public class AppointmentServiceTests
         {
             AddResult = BuildInvalidResult("Falha ao criar agendamento.")
         };
-        var service = new AppointmentService(repository);
+        var publisher = new FakeEventPublisher();
+        var service = new AppointmentService(repository, publisher);
 
         var result = await service.CreateAppointment(BuildCreateRequest());
 
         Assert.False(result.IsValid);
         Assert.Single(result.ValidationResult.Errors);
+        Assert.Empty(publisher.PublishedMessages);
     }
 
     [Fact]
@@ -46,7 +53,7 @@ public class AppointmentServiceTests
         {
             AppointmentById = appointment
         };
-        var service = new AppointmentService(repository);
+        var service = new AppointmentService(repository, new FakeEventPublisher());
 
         var result = await service.GetAppointment(appointment.Id);
 
@@ -60,7 +67,7 @@ public class AppointmentServiceTests
     [Fact]
     public async Task GetAppointment_ShouldReturnNotFound_WhenAppointmentDoesNotExist()
     {
-        var service = new AppointmentService(new FakeAppointmentRepository());
+        var service = new AppointmentService(new FakeAppointmentRepository(), new FakeEventPublisher());
 
         var result = await service.GetAppointment(Guid.NewGuid());
 
@@ -80,7 +87,7 @@ public class AppointmentServiceTests
                 BuildAppointment(clientId: clientId, status: AppointmentStatus.Accepted)
             ]
         };
-        var service = new AppointmentService(repository);
+        var service = new AppointmentService(repository, new FakeEventPublisher());
 
         var result = await service.GetListAppointments(clientId, AppointmentUserType.Client);
 
@@ -101,7 +108,7 @@ public class AppointmentServiceTests
                 BuildAppointment(barberId: barberId)
             ]
         };
-        var service = new AppointmentService(repository);
+        var service = new AppointmentService(repository, new FakeEventPublisher());
 
         var result = await service.GetListAppointments(barberId, AppointmentUserType.Barber);
 
@@ -113,7 +120,7 @@ public class AppointmentServiceTests
     [Fact]
     public async Task GetListAppointments_ShouldReturnFailure_WhenUserTypeIsInvalid()
     {
-        var service = new AppointmentService(new FakeAppointmentRepository());
+        var service = new AppointmentService(new FakeAppointmentRepository(), new FakeEventPublisher());
 
         var result = await service.GetListAppointments(Guid.NewGuid(), (AppointmentUserType)999);
 
@@ -134,7 +141,7 @@ public class AppointmentServiceTests
                 BuildAppointment(clientId: clientId, status: AppointmentStatus.Pending)
             ]
         };
-        var service = new AppointmentService(repository);
+        var service = new AppointmentService(repository, new FakeEventPublisher());
 
         var result = await service.GetListAppointments(clientId, AppointmentUserType.Client, AppointmentStatus.Pending);
 
@@ -155,7 +162,7 @@ public class AppointmentServiceTests
                 BuildAppointment(clientId: clientId, status: AppointmentStatus.Accepted)
             ]
         };
-        var service = new AppointmentService(repository);
+        var service = new AppointmentService(repository, new FakeEventPublisher());
 
         var result = await service.GetListAppointments(clientId, AppointmentUserType.Client, null);
 
@@ -171,7 +178,8 @@ public class AppointmentServiceTests
         {
             AppointmentById = appointment
         };
-        var service = new AppointmentService(repository);
+        var publisher = new FakeEventPublisher();
+        var service = new AppointmentService(repository, publisher);
 
         var result = await service.UpdateStatusAppointment(new UpdateAppointmentStatusRequestDto
         {
@@ -184,12 +192,15 @@ public class AppointmentServiceTests
         Assert.Equal(AppointmentStatus.Accepted, appointment.Status);
         Assert.NotNull(repository.LastUpdatedAppointment);
         Assert.Equal(AppointmentStatus.Accepted, repository.LastUpdatedAppointment!.Status);
+        Assert.Single(publisher.PublishedMessages);
+        Assert.IsType<AppointmentStatusUpdatedIntegrationEvent>(publisher.PublishedMessages.Single());
     }
 
     [Fact]
     public async Task UpdateStatusAppointment_ShouldReturnNotFound_WhenAppointmentDoesNotExist()
     {
-        var service = new AppointmentService(new FakeAppointmentRepository());
+        var publisher = new FakeEventPublisher();
+        var service = new AppointmentService(new FakeAppointmentRepository(), publisher);
 
         var result = await service.UpdateStatusAppointment(new UpdateAppointmentStatusRequestDto
         {
@@ -199,6 +210,7 @@ public class AppointmentServiceTests
 
         Assert.True(result.IsNotFound);
         Assert.False(result.Data);
+        Assert.Empty(publisher.PublishedMessages);
     }
 
     [Fact]
@@ -210,7 +222,8 @@ public class AppointmentServiceTests
             AppointmentById = appointment,
             UpdateResult = BuildInvalidResult("Falha ao atualizar.")
         };
-        var service = new AppointmentService(repository);
+        var publisher = new FakeEventPublisher();
+        var service = new AppointmentService(repository, publisher);
 
         var result = await service.UpdateStatusAppointment(new UpdateAppointmentStatusRequestDto
         {
@@ -220,6 +233,7 @@ public class AppointmentServiceTests
 
         Assert.False(result.IsValid);
         Assert.Single(result.ValidationResult.Errors);
+        Assert.Empty(publisher.PublishedMessages);
     }
 
     private static CreateAppointmentRequestDto BuildCreateRequest()
@@ -298,6 +312,17 @@ public class AppointmentServiceTests
             LastUpdatedAppointment = appointment;
             AppointmentById = appointment;
             return Task.FromResult(UpdateResult);
+        }
+    }
+
+    private sealed class FakeEventPublisher : IEventPublisher
+    {
+        public List<object> PublishedMessages { get; } = [];
+
+        public Task PublishAsync<TMessage>(TMessage message, CancellationToken cancellationToken = default)
+        {
+            PublishedMessages.Add(message!);
+            return Task.CompletedTask;
         }
     }
 }

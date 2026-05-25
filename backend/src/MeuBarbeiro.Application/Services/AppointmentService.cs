@@ -1,6 +1,8 @@
+using MeuBarbeiro.Application.Abstractions.Messaging;
 using FluentValidation.Results;
 using MeuBarbeiro.Application.Abstractions.Persistence;
 using MeuBarbeiro.Application.Abstractions.Services;
+using MeuBarbeiro.Contracts.Events;
 using MeuBarbeiro.Application.DTOs.Appointments;
 using MeuBarbeiro.Application.DTOs.Shared;
 using MeuBarbeiro.Application.Mappings.Appointments;
@@ -9,16 +11,27 @@ using MeuBarbeiro.Domain.Enums;
 
 namespace MeuBarbeiro.Application.Services;
 
-public class AppointmentService(IAppointmentRepository appointmentRepository) : IAppointmentService
+public class AppointmentService(IAppointmentRepository appointmentRepository, IEventPublisher eventPublisher) : IAppointmentService
 {
     public async Task<ServiceResult<Guid>> CreateAppointment(CreateAppointmentRequestDto request)
     {
         var appointment = request.ToEntity();
         var validationResult = await appointmentRepository.AddAsync(appointment);
 
-        return validationResult.IsValid
-            ? ServiceResult<Guid>.Success(appointment.Id)
-            : ServiceResult<Guid>.Failure(validationResult);
+        if (!validationResult.IsValid)
+        {
+            return ServiceResult<Guid>.Failure(validationResult);
+        }
+
+        await eventPublisher.PublishAsync(new AppointmentRequestedIntegrationEvent(
+            appointment.Id,
+            appointment.ClientId,
+            appointment.BarberId,
+            appointment.BarbershopId,
+            appointment.ScheduledAtUtc,
+            appointment.TotalPrice));
+
+        return ServiceResult<Guid>.Success(appointment.Id);
     }
 
     public async Task<ServiceResult<AppointmentResponseDto>> GetAppointment(Guid id)
@@ -73,8 +86,17 @@ public class AppointmentService(IAppointmentRepository appointmentRepository) : 
 
         var validationResult = await appointmentRepository.UpdateAsync(appointment);
 
-        return validationResult.IsValid
-            ? ServiceResult<bool>.Success(true)
-            : ServiceResult<bool>.Failure(validationResult);
+        if (!validationResult.IsValid)
+        {
+            return ServiceResult<bool>.Failure(validationResult);
+        }
+
+        await eventPublisher.PublishAsync(new AppointmentStatusUpdatedIntegrationEvent(
+            appointment.Id,
+            appointment.BarberId,
+            appointment.Status.ToString(),
+            DateTime.UtcNow));
+
+        return ServiceResult<bool>.Success(true);
     }
 }

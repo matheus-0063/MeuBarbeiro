@@ -96,6 +96,25 @@ dotnet run --project backend/src/MeuBarbeiro.Api
 dotnet run --project backend/src/MeuBarbeiro.Worker
 ```
 
+### Sprint 2 - Mensageria
+
+Fluxo implementado:
+
+- `AppointmentRequestedIntegrationEvent`
+- `AppointmentStatusUpdatedIntegrationEvent`
+
+Topologia RabbitMQ:
+
+- Exchange: `meu-barbeiro.events`
+- Fila: `appointments.requested`
+- Fila: `appointments.status-updated`
+
+Documentacao complementar:
+
+- [documentacao-eventos.md](/Users/matheusfernandes/Documents/MeuBarbeiro/docs/Sprint%202/documentacao-eventos.md:1)
+- [relatorio-integracao.md](/Users/matheusfernandes/Documents/MeuBarbeiro/docs/Sprint%202/relatorio-integracao.md:1)
+- [evidencia-execucao.md](/Users/matheusfernandes/Documents/MeuBarbeiro/docs/Sprint%202/evidencia-execucao.md:1)
+
 ### RabbitMQ
 
 ```bash
