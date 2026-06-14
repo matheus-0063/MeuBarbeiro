@@ -3,6 +3,7 @@ using MeuBarbeiro.Api.Models.Responses;
 using MeuBarbeiro.Application.Abstractions.Services;
 using MeuBarbeiro.Application.DTOs.Appointments;
 using MeuBarbeiro.Domain.Enums;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace MeuBarbeiro.Api.Controllers;
@@ -11,6 +12,7 @@ namespace MeuBarbeiro.Api.Controllers;
 [Route("api/v{version:apiVersion}/appointment")]
 public class AppointmentController(IAppointmentService appointmentService) : BaseController
 {
+    [Authorize(Roles = "Client")]
     [HttpPost]
     [ProducesResponseType<AppointmentIdResponseModel>(StatusCodes.Status201Created)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]

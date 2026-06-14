@@ -4,6 +4,29 @@ namespace MeuBarbeiro.Infrastructure.Persistence;
 
 public sealed class DatabaseSchemaInitializer
 {
+    private const string CreateUsersTableSql = """
+        CREATE TABLE IF NOT EXISTS "Users" (
+            "Id" TEXT NOT NULL CONSTRAINT "PK_Users" PRIMARY KEY,
+            "Name" TEXT NOT NULL,
+            "Email" TEXT NOT NULL,
+            "PasswordHash" TEXT NOT NULL,
+            "Role" INTEGER NOT NULL,
+            "CreateAt" TEXT NOT NULL
+        );
+        """;
+    private const string CreateClientsTableSql = """
+        CREATE TABLE IF NOT EXISTS "Clients" (
+            "Id" TEXT NOT NULL CONSTRAINT "PK_Clients" PRIMARY KEY,
+            "UserId" TEXT NOT NULL
+        );
+        """;
+    private const string CreateBarbersTableSql = """
+        CREATE TABLE IF NOT EXISTS "Barbers" (
+            "Id" TEXT NOT NULL CONSTRAINT "PK_Barbers" PRIMARY KEY,
+            "UserId" TEXT NOT NULL,
+            "BarbershopId" TEXT NULL
+        );
+        """;
     private const string CreateEventProcessingAuditsTableSql = """
         CREATE TABLE IF NOT EXISTS "EventProcessingAudits" (
             "Id" TEXT NOT NULL CONSTRAINT "PK_EventProcessingAudits" PRIMARY KEY,
@@ -39,6 +62,12 @@ public sealed class DatabaseSchemaInitializer
     public async Task EnsureSchemaAsync(AppDbContext dbContext, CancellationToken cancellationToken = default)
     {
         await dbContext.Database.EnsureCreatedAsync(cancellationToken);
+        await dbContext.Database.ExecuteSqlRawAsync(CreateUsersTableSql, cancellationToken);
+        await dbContext.Database.ExecuteSqlRawAsync("""CREATE UNIQUE INDEX IF NOT EXISTS "IX_Users_Email" ON "Users" ("Email");""", cancellationToken);
+        await dbContext.Database.ExecuteSqlRawAsync(CreateClientsTableSql, cancellationToken);
+        await dbContext.Database.ExecuteSqlRawAsync("""CREATE UNIQUE INDEX IF NOT EXISTS "IX_Clients_UserId" ON "Clients" ("UserId");""", cancellationToken);
+        await dbContext.Database.ExecuteSqlRawAsync(CreateBarbersTableSql, cancellationToken);
+        await dbContext.Database.ExecuteSqlRawAsync("""CREATE UNIQUE INDEX IF NOT EXISTS "IX_Barbers_UserId" ON "Barbers" ("UserId");""", cancellationToken);
         await dbContext.Database.ExecuteSqlRawAsync(CreateBarbershopsTableSql, cancellationToken);
         await dbContext.Database.ExecuteSqlRawAsync(CreateEventProcessingAuditsTableSql, cancellationToken);
         await dbContext.Database.ExecuteSqlRawAsync(CreateServiceOfferingsTableSql, cancellationToken);

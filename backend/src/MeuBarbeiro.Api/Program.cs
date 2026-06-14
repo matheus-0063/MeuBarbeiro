@@ -1,3 +1,4 @@
+using System.Text;
 using Asp.Versioning;
 using MeuBarbeiro.Application.Abstractions.Messaging;
 using MeuBarbeiro.Application.Abstractions.Persistence;
@@ -6,9 +7,12 @@ using MeuBarbeiro.Application.Services;
 using MeuBarbeiro.Infrastructure.Messaging;
 using MeuBarbeiro.Infrastructure.Persistence;
 using MeuBarbeiro.Infrastructure.Persistence.Repositories;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
+var jwtSecretKey = builder.Configuration["Jwt:SecretKey"]!;
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
@@ -27,6 +31,25 @@ builder.Services
         options.SubstituteApiVersionInUrl = true;
     });
 
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(jwtSecretKey)
+            )
+        };
+    });
+
+builder.Services.AddAuthorization();
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddSingleton<DatabaseSchemaInitializer>();
@@ -35,8 +58,11 @@ builder.Services.AddSingleton<IRabbitMqConnectionProvider, RabbitMqConnectionPro
 builder.Services.AddSingleton<RabbitMqTopologyInitializer>();
 builder.Services.AddScoped<IEventPublisher, RabbitMqEventPublisher>();
 builder.Services.AddScoped<IAppointmentRepository, SqliteAppointmentRepository>();
+builder.Services.AddScoped<IBarberRepository, SqliteBarberRepository>();
 builder.Services.AddScoped<IBarbershopRepository, SqliteBarbershopRepository>();
+builder.Services.AddScoped<IClientRepository, SqliteClientRepository>();
 builder.Services.AddScoped<IServiceOfferingRepository, SqliteServiceOfferingRepository>();
+builder.Services.AddScoped<IUserRepository, SqliteUserRepository>();
 builder.Services.AddScoped<IAppointmentService, AppointmentService>();
 builder.Services.AddScoped<IBarbershopService, BarbershopService>();
 builder.Services.AddScoped<IServicesService, ServicesService>();
@@ -61,6 +87,9 @@ app.UseHttpsRedirection();
 app.UseSwagger();
 app.UseSwaggerUI();
 app.MapControllers();
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapGet("/", () => Results.Ok(new
 {
