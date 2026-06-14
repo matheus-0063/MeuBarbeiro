@@ -6,10 +6,10 @@ namespace MeuBarbeiro.Application.Mappings.Appointments;
 
 public static class AppointmentMapping
 {
-    public static Appointment ToEntity(this CreateAppointmentRequestDto request) => new Appointment
+    public static Appointment ToEntity(this CreateAppointmentRequestDto request, Guid clientId) => new Appointment
     {
         Id = Guid.NewGuid(),
-        ClientId = request.ClientId,
+        ClientId = clientId,
         BarberId = request.BarberId,
         BarbershopId = request.BarbershopId,
         ScheduledAtUtc = request.ScheduledAtUtc,

@@ -18,12 +18,14 @@ public class AppointmentServiceTests
         var publisher = new FakeEventPublisher();
         var service = new AppointmentService(repository, publisher);
 
-        var result = await service.CreateAppointment(BuildCreateRequest());
+        var clientId = Guid.NewGuid();
+        var result = await service.CreateAppointment(BuildCreateRequest(), clientId);
 
         Assert.True(result.IsValid);
         Assert.NotEqual(Guid.Empty, result.Data);
         Assert.NotNull(repository.LastAddedAppointment);
         Assert.Equal(AppointmentStatus.Pending, repository.LastAddedAppointment!.Status);
+        Assert.Equal(clientId, repository.LastAddedAppointment!.ClientId);
         Assert.Single(publisher.PublishedMessages);
         Assert.IsType<AppointmentRequestedIntegrationEvent>(publisher.PublishedMessages.Single());
     }
@@ -38,7 +40,7 @@ public class AppointmentServiceTests
         var publisher = new FakeEventPublisher();
         var service = new AppointmentService(repository, publisher);
 
-        var result = await service.CreateAppointment(BuildCreateRequest());
+        var result = await service.CreateAppointment(BuildCreateRequest(), Guid.NewGuid());
 
         Assert.False(result.IsValid);
         Assert.Single(result.ValidationResult.Errors);
@@ -240,7 +242,6 @@ public class AppointmentServiceTests
     {
         return new CreateAppointmentRequestDto
         {
-            ClientId = Guid.NewGuid(),
             BarberId = Guid.NewGuid(),
             BarbershopId = Guid.NewGuid(),
             ScheduledAtUtc = DateTime.UtcNow.AddDays(1),

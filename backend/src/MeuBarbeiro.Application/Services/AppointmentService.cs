@@ -13,9 +13,9 @@ namespace MeuBarbeiro.Application.Services;
 
 public class AppointmentService(IAppointmentRepository appointmentRepository, IEventPublisher eventPublisher) : IAppointmentService
 {
-    public async Task<ServiceResult<Guid>> CreateAppointment(CreateAppointmentRequestDto request)
+    public async Task<ServiceResult<Guid>> CreateAppointment(CreateAppointmentRequestDto request, Guid clientId)
     {
-        var appointment = request.ToEntity();
+        var appointment = request.ToEntity(clientId);
         var validationResult = await appointmentRepository.AddAsync(appointment);
 
         if (!validationResult.IsValid)

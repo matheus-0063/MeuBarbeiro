@@ -2,6 +2,7 @@ using Asp.Versioning;
 using MeuBarbeiro.Api.Models.Responses;
 using MeuBarbeiro.Application.Abstractions.Services;
 using MeuBarbeiro.Application.DTOs.Barbershop;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace MeuBarbeiro.Api.Controllers;
@@ -19,6 +20,7 @@ public class BarbershopController(IBarbershopService barbershopService) : BaseCo
     }
 
     [HttpPost]
+    [Authorize(Roles = "Barber")]
     [ProducesResponseType<BarbershopIdResponseModel>(StatusCodes.Status201Created)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CreateBarbershop([FromBody] CreateBarbershopRequestDto request)

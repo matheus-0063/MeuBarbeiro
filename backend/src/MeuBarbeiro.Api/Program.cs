@@ -86,10 +86,9 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseSwagger();
 app.UseSwaggerUI();
-app.MapControllers();
-
 app.UseAuthentication();
 app.UseAuthorization();
+app.MapControllers();
 
 app.MapGet("/", () => Results.Ok(new
 {

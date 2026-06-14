@@ -1,6 +1,7 @@
 using Asp.Versioning;
 using MeuBarbeiro.Application.Abstractions.Services;
 using MeuBarbeiro.Application.DTOs.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace MeuBarbeiro.Api.Controllers;
@@ -25,6 +26,7 @@ public class ServicesController(IServicesService servicesService) : BaseControll
     }
 
     [HttpPost]
+    [Authorize(Roles = "Barber")]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> AddServices([FromBody] AddServicesRequestDto request)

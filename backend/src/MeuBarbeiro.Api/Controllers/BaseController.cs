@@ -1,4 +1,5 @@
 using FluentValidation.Results;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 
 namespace MeuBarbeiro.Api.Controllers;
@@ -28,5 +29,13 @@ public abstract class BaseController : ControllerBase
     protected void AddProcessError(IEnumerable<string> errorMessage, string? propertyName = null)
     {
         foreach (var error in errorMessage) AddProcessError(error, propertyName);
+    }
+
+    protected bool TryGetAuthenticatedUserId(out Guid userId)
+    {
+        userId = Guid.Empty;
+
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        return Guid.TryParse(userIdValue, out userId);
     }
 }

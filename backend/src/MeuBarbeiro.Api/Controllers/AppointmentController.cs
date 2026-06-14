@@ -1,5 +1,6 @@
 using Asp.Versioning;
 using MeuBarbeiro.Api.Models.Responses;
+using MeuBarbeiro.Application.Abstractions.Persistence;
 using MeuBarbeiro.Application.Abstractions.Services;
 using MeuBarbeiro.Application.DTOs.Appointments;
 using MeuBarbeiro.Domain.Enums;
@@ -10,15 +11,34 @@ namespace MeuBarbeiro.Api.Controllers;
 
 [ApiVersion("1.0")]
 [Route("api/v{version:apiVersion}/appointment")]
-public class AppointmentController(IAppointmentService appointmentService) : BaseController
+public class AppointmentController(
+    IAppointmentService appointmentService,
+    IClientRepository clientRepository,
+    IBarberRepository barberRepository) : BaseController
 {
     [Authorize(Roles = "Client")]
     [HttpPost]
     [ProducesResponseType<AppointmentIdResponseModel>(StatusCodes.Status201Created)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> CreateAppointment([FromBody] CreateAppointmentRequestDto request)
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> CreateAppointment([FromBody] CreateAppointmentRequestDto request, CancellationToken cancellationToken)
     {
-        var result = await appointmentService.CreateAppointment(request);
+        if (!TryGetAuthenticatedUserId(out var userId))
+        {
+            return Unauthorized();
+        }
+
+        var client = await clientRepository.GetByUserIdAsync(userId, cancellationToken);
+        if (client is null)
+        {
+            return NotFound(new ProblemDetails
+            {
+                Title = "Perfil de cliente não encontrado."
+            });
+        }
+
+        var result = await appointmentService.CreateAppointment(request, client.Id);
 
         if (ResponseHasErros(result.ValidationResult))
         {
@@ -29,39 +49,127 @@ public class AppointmentController(IAppointmentService appointmentService) : Bas
             new AppointmentIdResponseModel { AppointmentId = result.Data! });
     }
 
+    [Authorize(Roles = "Client,Barber")]
     [HttpGet("{appointmentId:guid}")]
     [ProducesResponseType<AppointmentResponseDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetAppointment(Guid appointmentId)
+    public async Task<IActionResult> GetAppointment(Guid appointmentId, CancellationToken cancellationToken)
     {
         var result = await appointmentService.GetAppointment(appointmentId);
 
-        if (result.IsNotFound)
+        if (result.IsNotFound) return NotFound();
+        if (!TryGetAuthenticatedUserId(out var userId)) return Unauthorized();
+
+        if (User.IsInRole("Client"))
         {
-            return NotFound();
+            var client = await clientRepository.GetByUserIdAsync(userId, cancellationToken);
+            if (client is null)
+                return NotFound(new ProblemDetails { Title = "Perfil de cliente não encontrado." });
+
+            if (result.Data!.ClientId != client.Id)
+                return Forbid();
+        }
+        else if (User.IsInRole("Barber"))
+        {
+            var barber = await barberRepository.GetByUserIdAsync(userId, cancellationToken);
+            if (barber is null)
+                return NotFound(new ProblemDetails { Title = "Perfil de barbeiro não encontrado." });
+
+            if (result.Data!.BarberId != barber.Id)
+                return Forbid();
         }
 
         return Ok(result.Data);
     }
 
-    [HttpGet]
+    [Authorize(Roles = "Client,Barber")]
+    [HttpGet("mine")]
     [ProducesResponseType<IEnumerable<AppointmentResponseDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> GetAppointments([FromQuery] Guid userId, [FromQuery] AppointmentUserType userType, [FromQuery] AppointmentStatus? status)
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetAppointments([FromQuery] AppointmentStatus? status, CancellationToken cancellationToken)
     {
-        var dataValidationResult = await appointmentService.GetListAppointments(userId, userType, status);
+        if (!TryGetAuthenticatedUserId(out var userId))
+        {
+            return Unauthorized();
+        }
+
+        Guid actorId;
+        AppointmentUserType userType;
+
+        if (User.IsInRole("Client"))
+        {
+            var client = await clientRepository.GetByUserIdAsync(userId, cancellationToken);
+            if (client is null)
+            {
+                return NotFound(new ProblemDetails
+                {
+                    Title = "Perfil de cliente não encontrado."
+                });
+            }
+
+            actorId = client.Id;
+            userType = AppointmentUserType.Client;
+        }
+        else
+        {
+            var barber = await barberRepository.GetByUserIdAsync(userId, cancellationToken);
+            if (barber is null)
+            {
+                return NotFound(new ProblemDetails
+                {
+                    Title = "Perfil de barbeiro não encontrado."
+                });
+            }
+
+            actorId = barber.Id;
+            userType = AppointmentUserType.Barber;
+        }
+
+        var dataValidationResult = await appointmentService.GetListAppointments(actorId, userType, status, cancellationToken);
 
         return ResponseHasErros(dataValidationResult.ValidationResult)
             ? ValidationProblem()
             : Ok(dataValidationResult.Data);
     }
 
+    [Authorize(Roles = "Barber")]
     [HttpPatch("{appointmentId:guid}/status")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> UpdateStatus(Guid appointmentId, [FromBody] UpdateAppointmentStatusRequestDto request)
+    public async Task<IActionResult> UpdateStatus(Guid appointmentId, [FromBody] UpdateAppointmentStatusRequestDto request, CancellationToken cancellationToken)
     {
+        if (!TryGetAuthenticatedUserId(out var userId))
+        {
+            return Unauthorized();
+        }
+
+        var barber = await barberRepository.GetByUserIdAsync(userId, cancellationToken);
+        if (barber is null)
+        {
+            return NotFound(new ProblemDetails
+            {
+                Title = "Perfil de barbeiro não encontrado."
+            });
+        }
+
+        var appointmentResult = await appointmentService.GetAppointment(appointmentId);
+        if (appointmentResult.IsNotFound)
+        {
+            return NotFound();
+        }
+
+        if (appointmentResult.Data!.BarberId != barber.Id)
+        {
+            return Forbid();
+        }
+
         request.AppointmentId = appointmentId;
         var result = await appointmentService.UpdateStatusAppointment(request);
 
