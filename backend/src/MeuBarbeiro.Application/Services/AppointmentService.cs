@@ -11,11 +11,22 @@ using MeuBarbeiro.Domain.Enums;
 
 namespace MeuBarbeiro.Application.Services;
 
-public class AppointmentService(IAppointmentRepository appointmentRepository, IEventPublisher eventPublisher) : IAppointmentService
+public class AppointmentService(
+    IAppointmentRepository appointmentRepository,
+    IBarberRepository barberRepository,
+    IEventPublisher eventPublisher) : IAppointmentService
 {
     public async Task<ServiceResult<Guid>> CreateAppointment(CreateAppointmentRequestDto request, Guid clientId)
     {
-        var appointment = request.ToEntity(clientId);
+        var barber = await barberRepository.GetByBarbershopIdAsync(request.BarbershopId);
+        if (barber is null)
+        {
+            var barberValidationResult = new ValidationResult();
+            barberValidationResult.Errors.Add(new ValidationFailure(nameof(request.BarbershopId), "Nao existe barbeiro vinculado a barbearia selecionada."));
+            return ServiceResult<Guid>.Failure(barberValidationResult);
+        }
+
+        var appointment = request.ToEntity(clientId, barber.Id);
         var validationResult = await appointmentRepository.AddAsync(appointment);
 
         if (!validationResult.IsValid)

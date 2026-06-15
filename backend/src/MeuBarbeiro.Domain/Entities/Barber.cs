@@ -8,10 +8,15 @@ public class Barber
 
     public Barber() { }
 
-    public Barber(Guid userId, Guid barberId)
+    public Barber(Guid userId, Guid? barbershopId = null)
     {
         Id = Guid.NewGuid();
         UserId = userId;
-        BarbershopId = barberId;
+        BarbershopId = barbershopId;
+    }
+
+    public void AssignBarbershop(Guid barbershopId)
+    {
+        BarbershopId = barbershopId;
     }
 }

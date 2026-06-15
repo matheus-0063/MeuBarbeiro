@@ -15,17 +15,24 @@ public class AppointmentServiceTests
     public async Task CreateAppointment_ShouldReturnSuccessAndPendingStatus_WhenRepositoryAccepts()
     {
         var repository = new FakeAppointmentRepository();
+        var request = BuildCreateRequest();
+        var barberRepository = new FakeBarberRepository
+        {
+            BarberByBarbershopId = BuildBarber(barbershopId: request.BarbershopId)
+        };
         var publisher = new FakeEventPublisher();
-        var service = new AppointmentService(repository, publisher);
+        var service = new AppointmentService(repository, barberRepository, publisher);
 
         var clientId = Guid.NewGuid();
-        var result = await service.CreateAppointment(BuildCreateRequest(), clientId);
+        var result = await service.CreateAppointment(request, clientId);
 
         Assert.True(result.IsValid);
         Assert.NotEqual(Guid.Empty, result.Data);
         Assert.NotNull(repository.LastAddedAppointment);
         Assert.Equal(AppointmentStatus.Pending, repository.LastAddedAppointment!.Status);
         Assert.Equal(clientId, repository.LastAddedAppointment!.ClientId);
+        Assert.Equal(request.BarbershopId, repository.LastAddedAppointment!.BarbershopId);
+        Assert.Equal(barberRepository.BarberByBarbershopId!.Id, repository.LastAddedAppointment!.BarberId);
         Assert.Single(publisher.PublishedMessages);
         Assert.IsType<AppointmentRequestedIntegrationEvent>(publisher.PublishedMessages.Single());
     }
@@ -33,17 +40,39 @@ public class AppointmentServiceTests
     [Fact]
     public async Task CreateAppointment_ShouldReturnFailure_WhenRepositoryRejects()
     {
+        var request = BuildCreateRequest();
         var repository = new FakeAppointmentRepository
         {
             AddResult = BuildInvalidResult("Falha ao criar agendamento.")
         };
+        var barberRepository = new FakeBarberRepository
+        {
+            BarberByBarbershopId = BuildBarber(barbershopId: request.BarbershopId)
+        };
         var publisher = new FakeEventPublisher();
-        var service = new AppointmentService(repository, publisher);
+        var service = new AppointmentService(repository, barberRepository, publisher);
 
-        var result = await service.CreateAppointment(BuildCreateRequest(), Guid.NewGuid());
+        var result = await service.CreateAppointment(request, Guid.NewGuid());
 
         Assert.False(result.IsValid);
         Assert.Single(result.ValidationResult.Errors);
+        Assert.Empty(publisher.PublishedMessages);
+    }
+
+    [Fact]
+    public async Task CreateAppointment_ShouldReturnFailure_WhenBarbershopDoesNotHaveBarber()
+    {
+        var request = BuildCreateRequest();
+        var repository = new FakeAppointmentRepository();
+        var barberRepository = new FakeBarberRepository();
+        var publisher = new FakeEventPublisher();
+        var service = new AppointmentService(repository, barberRepository, publisher);
+
+        var result = await service.CreateAppointment(request, Guid.NewGuid());
+
+        Assert.False(result.IsValid);
+        Assert.Contains(result.ValidationResult.Errors, error => error.PropertyName == nameof(CreateAppointmentRequestDto.BarbershopId));
+        Assert.Null(repository.LastAddedAppointment);
         Assert.Empty(publisher.PublishedMessages);
     }
 
@@ -55,7 +84,7 @@ public class AppointmentServiceTests
         {
             AppointmentById = appointment
         };
-        var service = new AppointmentService(repository, new FakeEventPublisher());
+        var service = new AppointmentService(repository, new FakeBarberRepository(), new FakeEventPublisher());
 
         var result = await service.GetAppointment(appointment.Id);
 
@@ -69,7 +98,7 @@ public class AppointmentServiceTests
     [Fact]
     public async Task GetAppointment_ShouldReturnNotFound_WhenAppointmentDoesNotExist()
     {
-        var service = new AppointmentService(new FakeAppointmentRepository(), new FakeEventPublisher());
+        var service = new AppointmentService(new FakeAppointmentRepository(), new FakeBarberRepository(), new FakeEventPublisher());
 
         var result = await service.GetAppointment(Guid.NewGuid());
 
@@ -89,7 +118,7 @@ public class AppointmentServiceTests
                 BuildAppointment(clientId: clientId, status: AppointmentStatus.Accepted)
             ]
         };
-        var service = new AppointmentService(repository, new FakeEventPublisher());
+        var service = new AppointmentService(repository, new FakeBarberRepository(), new FakeEventPublisher());
 
         var result = await service.GetListAppointments(clientId, AppointmentUserType.Client);
 
@@ -110,7 +139,7 @@ public class AppointmentServiceTests
                 BuildAppointment(barberId: barberId)
             ]
         };
-        var service = new AppointmentService(repository, new FakeEventPublisher());
+        var service = new AppointmentService(repository, new FakeBarberRepository(), new FakeEventPublisher());
 
         var result = await service.GetListAppointments(barberId, AppointmentUserType.Barber);
 
@@ -122,7 +151,7 @@ public class AppointmentServiceTests
     [Fact]
     public async Task GetListAppointments_ShouldReturnFailure_WhenUserTypeIsInvalid()
     {
-        var service = new AppointmentService(new FakeAppointmentRepository(), new FakeEventPublisher());
+        var service = new AppointmentService(new FakeAppointmentRepository(), new FakeBarberRepository(), new FakeEventPublisher());
 
         var result = await service.GetListAppointments(Guid.NewGuid(), (AppointmentUserType)999);
 
@@ -143,7 +172,7 @@ public class AppointmentServiceTests
                 BuildAppointment(clientId: clientId, status: AppointmentStatus.Pending)
             ]
         };
-        var service = new AppointmentService(repository, new FakeEventPublisher());
+        var service = new AppointmentService(repository, new FakeBarberRepository(), new FakeEventPublisher());
 
         var result = await service.GetListAppointments(clientId, AppointmentUserType.Client, AppointmentStatus.Pending);
 
@@ -164,7 +193,7 @@ public class AppointmentServiceTests
                 BuildAppointment(clientId: clientId, status: AppointmentStatus.Accepted)
             ]
         };
-        var service = new AppointmentService(repository, new FakeEventPublisher());
+        var service = new AppointmentService(repository, new FakeBarberRepository(), new FakeEventPublisher());
 
         var result = await service.GetListAppointments(clientId, AppointmentUserType.Client, null);
 
@@ -181,7 +210,7 @@ public class AppointmentServiceTests
             AppointmentById = appointment
         };
         var publisher = new FakeEventPublisher();
-        var service = new AppointmentService(repository, publisher);
+        var service = new AppointmentService(repository, new FakeBarberRepository(), publisher);
 
         var result = await service.UpdateStatusAppointment(new UpdateAppointmentStatusRequestDto
         {
@@ -202,7 +231,7 @@ public class AppointmentServiceTests
     public async Task UpdateStatusAppointment_ShouldReturnNotFound_WhenAppointmentDoesNotExist()
     {
         var publisher = new FakeEventPublisher();
-        var service = new AppointmentService(new FakeAppointmentRepository(), publisher);
+        var service = new AppointmentService(new FakeAppointmentRepository(), new FakeBarberRepository(), publisher);
 
         var result = await service.UpdateStatusAppointment(new UpdateAppointmentStatusRequestDto
         {
@@ -225,7 +254,7 @@ public class AppointmentServiceTests
             UpdateResult = BuildInvalidResult("Falha ao atualizar.")
         };
         var publisher = new FakeEventPublisher();
-        var service = new AppointmentService(repository, publisher);
+        var service = new AppointmentService(repository, new FakeBarberRepository(), publisher);
 
         var result = await service.UpdateStatusAppointment(new UpdateAppointmentStatusRequestDto
         {
@@ -242,7 +271,6 @@ public class AppointmentServiceTests
     {
         return new CreateAppointmentRequestDto
         {
-            BarberId = Guid.NewGuid(),
             BarbershopId = Guid.NewGuid(),
             ScheduledAtUtc = DateTime.UtcNow.AddDays(1),
             TotalPrice = 50m
@@ -266,6 +294,11 @@ public class AppointmentServiceTests
             TotalPrice = 75m,
             Status = status
         };
+    }
+
+    private static Barber BuildBarber(Guid? userId = null, Guid? barbershopId = null)
+    {
+        return new Barber(userId ?? Guid.NewGuid(), barbershopId ?? Guid.NewGuid());
     }
 
     private static ValidationResult BuildInvalidResult(string errorMessage)
@@ -324,6 +357,42 @@ public class AppointmentServiceTests
         {
             PublishedMessages.Add(message!);
             return Task.CompletedTask;
+        }
+    }
+
+    private sealed class FakeBarberRepository : IBarberRepository
+    {
+        public Barber? BarberById { get; set; }
+        public Barber? BarberByBarbershopId { get; set; }
+
+        public Task<Barber?> GetByIdAsync(Guid barberId, CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(BarberById);
+        }
+
+        public Task<Barber?> GetByBarbershopIdAsync(Guid barbershopId, CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(BarberByBarbershopId);
+        }
+
+        public Task<Barber?> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult<Barber?>(null);
+        }
+
+        public Task<IReadOnlyCollection<Barber>> ListByBarbershopAsync(Guid barbershopId, CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult<IReadOnlyCollection<Barber>>(Array.Empty<Barber>());
+        }
+
+        public Task<ValidationResult> AddAsync(Barber barber, CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(new ValidationResult());
+        }
+
+        public Task<ValidationResult> UpdateAsync(Barber barber, CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(new ValidationResult());
         }
     }
 }

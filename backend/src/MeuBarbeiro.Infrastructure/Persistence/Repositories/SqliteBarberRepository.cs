@@ -13,6 +13,12 @@ public class SqliteBarberRepository(AppDbContext dbContext) : IBarberRepository
             .FirstOrDefaultAsync(barber => barber.Id == barberId, cancellationToken);
     }
 
+    public async Task<Barber?> GetByBarbershopIdAsync(Guid barbershopId, CancellationToken cancellationToken = default)
+    {
+        return await dbContext.Barbers
+            .FirstOrDefaultAsync(barber => barber.BarbershopId == barbershopId, cancellationToken);
+    }
+
     public async Task<Barber?> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         return await dbContext.Barbers
@@ -29,6 +35,14 @@ public class SqliteBarberRepository(AppDbContext dbContext) : IBarberRepository
     public async Task<ValidationResult> AddAsync(Barber barber, CancellationToken cancellationToken = default)
     {
         dbContext.Barbers.Add(barber);
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        return new ValidationResult();
+    }
+
+    public async Task<ValidationResult> UpdateAsync(Barber barber, CancellationToken cancellationToken = default)
+    {
+        dbContext.Barbers.Update(barber);
         await dbContext.SaveChangesAsync(cancellationToken);
 
         return new ValidationResult();

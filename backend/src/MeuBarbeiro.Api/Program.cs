@@ -8,6 +8,7 @@ using MeuBarbeiro.Infrastructure.Messaging;
 using MeuBarbeiro.Infrastructure.Persistence;
 using MeuBarbeiro.Infrastructure.Persistence.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.OpenApi.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
@@ -17,7 +18,33 @@ var jwtSecretKey = builder.Configuration["Jwt:SecretKey"]!;
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Informe o token JWT no formato: Bearer {seu_token}"
+    });
+
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
 builder.Services
     .AddApiVersioning(options =>
     {
@@ -63,6 +90,9 @@ builder.Services.AddScoped<IBarbershopRepository, SqliteBarbershopRepository>();
 builder.Services.AddScoped<IClientRepository, SqliteClientRepository>();
 builder.Services.AddScoped<IServiceOfferingRepository, SqliteServiceOfferingRepository>();
 builder.Services.AddScoped<IUserRepository, SqliteUserRepository>();
+builder.Services.AddScoped<IPasswordHasherService, PasswordHasherService>();
+builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
+builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<IAppointmentService, AppointmentService>();
 builder.Services.AddScoped<IBarbershopService, BarbershopService>();
 builder.Services.AddScoped<IServicesService, ServicesService>();

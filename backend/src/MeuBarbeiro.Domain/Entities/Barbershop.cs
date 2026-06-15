@@ -8,4 +8,12 @@ public sealed class Barbershop
     public string Address { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public double AverageRating { get; set; }
+
+    public void UpdateDetails(string name, string city, string address, string description)
+    {
+        Name = name;
+        City = city;
+        Address = address;
+        Description = description;
+    }
 }

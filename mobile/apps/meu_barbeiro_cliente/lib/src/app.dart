@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:meu_barbeiro_core/meu_barbeiro_core.dart';
 
-import 'features/client_shell_page.dart';
+import 'features/client_app_page.dart';
 
 class MeuBarbeiroClienteApp extends StatelessWidget {
   const MeuBarbeiroClienteApp({super.key});
@@ -20,7 +20,7 @@ class MeuBarbeiroClienteApp extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      home: const ClientShellPage(),
+      home: const ClientAppPage(),
     );
   }
 }

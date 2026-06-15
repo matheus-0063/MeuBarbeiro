@@ -30,8 +30,11 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
   meu_barbeiro_core:
     path: ../../packages/meu_barbeiro_core
+  http: ^1.5.0
 
   cupertino_icons: ^1.0.8
 

@@ -21,6 +21,14 @@ public class SqliteBarbershopRepository(AppDbContext dbContext) : IBarbershopRep
             .FirstOrDefaultAsync(barbershop => barbershop.Id == barbershopId, cancellationToken);
     }
 
+    public async Task<ValidationResult> UpdateAsync(Barbershop barbershop, CancellationToken cancellationToken = default)
+    {
+        dbContext.Barbershops.Update(barbershop);
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        return new ValidationResult();
+    }
+
     public async Task<IReadOnlyCollection<Barbershop>> ListAsync(string? city = null, CancellationToken cancellationToken = default)
     {
         var query = dbContext.Barbershops.AsQueryable();

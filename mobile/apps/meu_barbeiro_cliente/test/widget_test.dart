@@ -1,12 +1,16 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:meu_barbeiro_cliente/main.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  testWidgets('renderiza as abas principais do cliente', (tester) async {
-    await tester.pumpWidget(const MeuBarbeiroClienteApp());
+  testWidgets('renderiza tela de autenticacao do cliente', (tester) async {
+    SharedPreferences.setMockInitialValues({});
 
-    expect(find.text('Buscar'), findsOneWidget);
-    expect(find.text('Agenda'), findsOneWidget);
-    expect(find.text('Perfil'), findsOneWidget);
+    await tester.pumpWidget(const MeuBarbeiroClienteApp());
+    await tester.pumpAndSettle();
+
+    expect(find.text('Login'), findsOneWidget);
+    expect(find.text('Cadastro'), findsOneWidget);
+    expect(find.text('Entrar'), findsOneWidget);
   });
 }

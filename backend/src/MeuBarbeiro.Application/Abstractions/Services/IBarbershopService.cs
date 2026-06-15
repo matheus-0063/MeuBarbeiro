@@ -5,7 +5,7 @@ namespace MeuBarbeiro.Application.Abstractions.Services;
 
 public interface IBarbershopService
 {
-    Task<ServiceResult<Guid>> CreateBarbershop(CreateBarbershopRequestDto request);
-    Task<ServiceResult<BarbershopResponseDto>> GetBarbershop(Guid id);
+    Task<ServiceResult<BarbershopResponseDto>> SaveBarbershop(Guid? barbershopId, CreateBarbershopRequestDto request, CancellationToken cancellationToken = default);
+    Task<ServiceResult<BarbershopResponseDto>> GetBarbershop(Guid id, CancellationToken cancellationToken = default);
     Task<ServiceResult<IEnumerable<BarbershopResponseDto>>> GetBarbershops(string? city = null, CancellationToken cancellationToken = default);
 }
