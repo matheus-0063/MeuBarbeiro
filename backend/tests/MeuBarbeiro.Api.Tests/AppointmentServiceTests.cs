@@ -15,13 +15,26 @@ public class AppointmentServiceTests
     public async Task CreateAppointment_ShouldReturnSuccessAndPendingStatus_WhenRepositoryAccepts()
     {
         var repository = new FakeAppointmentRepository();
+        var selectionRepository = new FakeAppointmentServiceSelectionRepository();
         var request = BuildCreateRequest();
         var barberRepository = new FakeBarberRepository
         {
             BarberByBarbershopId = BuildBarber(barbershopId: request.BarbershopId)
         };
+        var serviceOfferingRepository = new FakeServiceOfferingRepository
+        {
+            ServicesByIds = request.ServiceIds.Select(serviceId => BuildServiceOffering(serviceId, request.BarbershopId)).ToArray()
+        };
         var publisher = new FakeEventPublisher();
-        var service = new AppointmentService(repository, barberRepository, publisher);
+        var service = new AppointmentService(
+            repository,
+            selectionRepository,
+            barberRepository,
+            new FakeBarbershopRepository(),
+            new FakeClientRepository(),
+            serviceOfferingRepository,
+            new FakeUserRepository(),
+            publisher);
 
         var clientId = Guid.NewGuid();
         var result = await service.CreateAppointment(request, clientId);
@@ -33,6 +46,7 @@ public class AppointmentServiceTests
         Assert.Equal(clientId, repository.LastAddedAppointment!.ClientId);
         Assert.Equal(request.BarbershopId, repository.LastAddedAppointment!.BarbershopId);
         Assert.Equal(barberRepository.BarberByBarbershopId!.Id, repository.LastAddedAppointment!.BarberId);
+        Assert.Equal(request.ServiceIds.Count, selectionRepository.LastAddedSelections.Count);
         Assert.Single(publisher.PublishedMessages);
         Assert.IsType<AppointmentRequestedIntegrationEvent>(publisher.PublishedMessages.Single());
     }
@@ -45,17 +59,31 @@ public class AppointmentServiceTests
         {
             AddResult = BuildInvalidResult("Falha ao criar agendamento.")
         };
+        var selectionRepository = new FakeAppointmentServiceSelectionRepository();
         var barberRepository = new FakeBarberRepository
         {
             BarberByBarbershopId = BuildBarber(barbershopId: request.BarbershopId)
         };
+        var serviceOfferingRepository = new FakeServiceOfferingRepository
+        {
+            ServicesByIds = request.ServiceIds.Select(serviceId => BuildServiceOffering(serviceId, request.BarbershopId)).ToArray()
+        };
         var publisher = new FakeEventPublisher();
-        var service = new AppointmentService(repository, barberRepository, publisher);
+        var service = new AppointmentService(
+            repository,
+            selectionRepository,
+            barberRepository,
+            new FakeBarbershopRepository(),
+            new FakeClientRepository(),
+            serviceOfferingRepository,
+            new FakeUserRepository(),
+            publisher);
 
         var result = await service.CreateAppointment(request, Guid.NewGuid());
 
         Assert.False(result.IsValid);
         Assert.Single(result.ValidationResult.Errors);
+        Assert.Empty(selectionRepository.LastAddedSelections);
         Assert.Empty(publisher.PublishedMessages);
     }
 
@@ -64,15 +92,25 @@ public class AppointmentServiceTests
     {
         var request = BuildCreateRequest();
         var repository = new FakeAppointmentRepository();
+        var selectionRepository = new FakeAppointmentServiceSelectionRepository();
         var barberRepository = new FakeBarberRepository();
         var publisher = new FakeEventPublisher();
-        var service = new AppointmentService(repository, barberRepository, publisher);
+        var service = new AppointmentService(
+            repository,
+            selectionRepository,
+            barberRepository,
+            new FakeBarbershopRepository(),
+            new FakeClientRepository(),
+            new FakeServiceOfferingRepository(),
+            new FakeUserRepository(),
+            publisher);
 
         var result = await service.CreateAppointment(request, Guid.NewGuid());
 
         Assert.False(result.IsValid);
         Assert.Contains(result.ValidationResult.Errors, error => error.PropertyName == nameof(CreateAppointmentRequestDto.BarbershopId));
         Assert.Null(repository.LastAddedAppointment);
+        Assert.Empty(selectionRepository.LastAddedSelections);
         Assert.Empty(publisher.PublishedMessages);
     }
 
@@ -80,11 +118,16 @@ public class AppointmentServiceTests
     public async Task GetAppointment_ShouldReturnSuccessWithDto_WhenAppointmentExists()
     {
         var appointment = BuildAppointment();
+        var user = BuildUser(name: "Cliente Teste");
+        var client = BuildClient(clientId: appointment.ClientId, userId: user.Id);
         var repository = new FakeAppointmentRepository
         {
             AppointmentById = appointment
         };
-        var service = new AppointmentService(repository, new FakeBarberRepository(), new FakeEventPublisher());
+        var service = BuildService(
+            repository: repository,
+            client: (client, user),
+            barbershops: [BuildBarbershop(id: appointment.BarbershopId, name: "Barbearia A")]);
 
         var result = await service.GetAppointment(appointment.Id);
 
@@ -93,12 +136,14 @@ public class AppointmentServiceTests
         Assert.NotNull(result.Data);
         Assert.Equal(appointment.Id, result.Data!.Id);
         Assert.Equal(appointment.Status.ToString(), result.Data.Status);
+        Assert.Equal("Cliente Teste", result.Data.ClientName);
+        Assert.Equal("Barbearia A", result.Data.BarbershopName);
     }
 
     [Fact]
     public async Task GetAppointment_ShouldReturnNotFound_WhenAppointmentDoesNotExist()
     {
-        var service = new AppointmentService(new FakeAppointmentRepository(), new FakeBarberRepository(), new FakeEventPublisher());
+        var service = BuildService();
 
         var result = await service.GetAppointment(Guid.NewGuid());
 
@@ -118,7 +163,7 @@ public class AppointmentServiceTests
                 BuildAppointment(clientId: clientId, status: AppointmentStatus.Accepted)
             ]
         };
-        var service = new AppointmentService(repository, new FakeBarberRepository(), new FakeEventPublisher());
+        var service = BuildService(repository: repository, clients: [BuildClient(clientId: clientId, userId: Guid.Parse("11111111-1111-1111-1111-111111111111"))], users: [BuildUser(id: Guid.Parse("11111111-1111-1111-1111-111111111111"), name: "Cliente 1")], barbershops: [BuildBarbershop()]);
 
         var result = await service.GetListAppointments(clientId, AppointmentUserType.Client);
 
@@ -139,7 +184,7 @@ public class AppointmentServiceTests
                 BuildAppointment(barberId: barberId)
             ]
         };
-        var service = new AppointmentService(repository, new FakeBarberRepository(), new FakeEventPublisher());
+        var service = BuildService(repository: repository, barbershops: [BuildBarbershop()]);
 
         var result = await service.GetListAppointments(barberId, AppointmentUserType.Barber);
 
@@ -151,7 +196,7 @@ public class AppointmentServiceTests
     [Fact]
     public async Task GetListAppointments_ShouldReturnFailure_WhenUserTypeIsInvalid()
     {
-        var service = new AppointmentService(new FakeAppointmentRepository(), new FakeBarberRepository(), new FakeEventPublisher());
+        var service = BuildService();
 
         var result = await service.GetListAppointments(Guid.NewGuid(), (AppointmentUserType)999);
 
@@ -172,7 +217,7 @@ public class AppointmentServiceTests
                 BuildAppointment(clientId: clientId, status: AppointmentStatus.Pending)
             ]
         };
-        var service = new AppointmentService(repository, new FakeBarberRepository(), new FakeEventPublisher());
+        var service = BuildService(repository: repository, clients: [BuildClient(clientId: clientId, userId: Guid.Parse("22222222-2222-2222-2222-222222222222"))], users: [BuildUser(id: Guid.Parse("22222222-2222-2222-2222-222222222222"), name: "Cliente 2")], barbershops: [BuildBarbershop()]);
 
         var result = await service.GetListAppointments(clientId, AppointmentUserType.Client, AppointmentStatus.Pending);
 
@@ -193,7 +238,7 @@ public class AppointmentServiceTests
                 BuildAppointment(clientId: clientId, status: AppointmentStatus.Accepted)
             ]
         };
-        var service = new AppointmentService(repository, new FakeBarberRepository(), new FakeEventPublisher());
+        var service = BuildService(repository: repository, clients: [BuildClient(clientId: clientId, userId: Guid.Parse("33333333-3333-3333-3333-333333333333"))], users: [BuildUser(id: Guid.Parse("33333333-3333-3333-3333-333333333333"), name: "Cliente 3")], barbershops: [BuildBarbershop()]);
 
         var result = await service.GetListAppointments(clientId, AppointmentUserType.Client, null);
 
@@ -210,7 +255,7 @@ public class AppointmentServiceTests
             AppointmentById = appointment
         };
         var publisher = new FakeEventPublisher();
-        var service = new AppointmentService(repository, new FakeBarberRepository(), publisher);
+        var service = BuildService(repository: repository, publisher: publisher);
 
         var result = await service.UpdateStatusAppointment(new UpdateAppointmentStatusRequestDto
         {
@@ -231,7 +276,7 @@ public class AppointmentServiceTests
     public async Task UpdateStatusAppointment_ShouldReturnNotFound_WhenAppointmentDoesNotExist()
     {
         var publisher = new FakeEventPublisher();
-        var service = new AppointmentService(new FakeAppointmentRepository(), new FakeBarberRepository(), publisher);
+        var service = BuildService(publisher: publisher);
 
         var result = await service.UpdateStatusAppointment(new UpdateAppointmentStatusRequestDto
         {
@@ -254,7 +299,7 @@ public class AppointmentServiceTests
             UpdateResult = BuildInvalidResult("Falha ao atualizar.")
         };
         var publisher = new FakeEventPublisher();
-        var service = new AppointmentService(repository, new FakeBarberRepository(), publisher);
+        var service = BuildService(repository: repository, publisher: publisher);
 
         var result = await service.UpdateStatusAppointment(new UpdateAppointmentStatusRequestDto
         {
@@ -272,6 +317,7 @@ public class AppointmentServiceTests
         return new CreateAppointmentRequestDto
         {
             BarbershopId = Guid.NewGuid(),
+            ServiceIds = [Guid.NewGuid(), Guid.NewGuid()],
             ScheduledAtUtc = DateTime.UtcNow.AddDays(1),
             TotalPrice = 50m
         };
@@ -299,6 +345,114 @@ public class AppointmentServiceTests
     private static Barber BuildBarber(Guid? userId = null, Guid? barbershopId = null)
     {
         return new Barber(userId ?? Guid.NewGuid(), barbershopId ?? Guid.NewGuid());
+    }
+
+    private static Client BuildClient(Guid? clientId = null, Guid? userId = null)
+    {
+        var client = new Client(userId ?? Guid.NewGuid());
+
+        if (clientId.HasValue)
+        {
+            typeof(Client).GetProperty(nameof(Client.Id))!.SetValue(client, clientId.Value);
+        }
+
+        return client;
+    }
+
+    private static (Client client, User user) BuildClientWithUser()
+    {
+        var user = BuildUser(name: "Cliente");
+        var client = BuildClient(userId: user.Id);
+        return (client, user);
+    }
+
+    private static User BuildUser(Guid? id = null, string name = "Cliente", string email = "cliente@email.com")
+    {
+        var user = new User(name, email, "hash", UserRole.Client);
+
+        if (id.HasValue)
+        {
+            typeof(User).GetProperty(nameof(User.Id))!.SetValue(user, id.Value);
+        }
+
+        return user;
+    }
+
+    private static Barbershop BuildBarbershop(Guid? id = null, string name = "Barbearia")
+    {
+        var barbershop = new Barbershop
+        {
+            Id = id ?? Guid.NewGuid(),
+            Name = name,
+            City = "Cidade",
+            Address = "Rua",
+            Description = "Descricao"
+        };
+
+        return barbershop;
+    }
+
+    private static ServiceOffering BuildServiceOffering(Guid serviceId, Guid barbershopId)
+    {
+        return new ServiceOffering
+        {
+            Id = serviceId,
+            BarbershopId = barbershopId,
+            Name = $"Servico {serviceId.ToString()[..4]}",
+            Price = 25m,
+            Description = "Servico",
+            DurationMinutes = 30
+        };
+    }
+
+    private AppointmentService BuildService(
+        FakeAppointmentRepository? repository = null,
+        FakeAppointmentServiceSelectionRepository? selectionRepository = null,
+        FakeBarberRepository? barberRepository = null,
+        FakeBarbershopRepository? barbershopRepository = null,
+        FakeClientRepository? clientRepository = null,
+        FakeServiceOfferingRepository? serviceOfferingRepository = null,
+        FakeUserRepository? userRepository = null,
+        FakeEventPublisher? publisher = null,
+        (Client client, User user)? client = null,
+        IReadOnlyCollection<Client>? clients = null,
+        IReadOnlyCollection<User>? users = null,
+        IReadOnlyCollection<Barbershop>? barbershops = null)
+    {
+        var fakeClientRepository = clientRepository ?? new FakeClientRepository();
+        var fakeUserRepository = userRepository ?? new FakeUserRepository();
+        var fakeBarbershopRepository = barbershopRepository ?? new FakeBarbershopRepository();
+
+        if (client.HasValue)
+        {
+            fakeClientRepository.ClientsByIds = [client.Value.client];
+            fakeUserRepository.UsersByIds = [client.Value.user];
+        }
+
+        if (clients is not null)
+        {
+            fakeClientRepository.ClientsByIds = clients;
+        }
+
+        if (users is not null)
+        {
+            fakeUserRepository.UsersByIds = users;
+        }
+
+        if (barbershops is not null)
+        {
+            fakeBarbershopRepository.BarbershopsByIds = barbershops;
+        }
+
+        return new AppointmentService(
+            repository ?? new FakeAppointmentRepository(),
+            selectionRepository ?? new FakeAppointmentServiceSelectionRepository(),
+            barberRepository ?? new FakeBarberRepository(),
+            fakeBarbershopRepository,
+            fakeClientRepository,
+            serviceOfferingRepository ?? new FakeServiceOfferingRepository(),
+            fakeUserRepository,
+            publisher ?? new FakeEventPublisher());
     }
 
     private static ValidationResult BuildInvalidResult(string errorMessage)
@@ -394,5 +548,62 @@ public class AppointmentServiceTests
         {
             return Task.FromResult(new ValidationResult());
         }
+    }
+
+    private sealed class FakeAppointmentServiceSelectionRepository : IAppointmentServiceSelectionRepository
+    {
+        public List<AppointmentServiceSelection> LastAddedSelections { get; } = [];
+        public IReadOnlyCollection<AppointmentServiceSelection> SelectionsByAppointmentIds { get; set; } = Array.Empty<AppointmentServiceSelection>();
+
+        public Task<ValidationResult> AddRangeAsync(IEnumerable<AppointmentServiceSelection> selections, CancellationToken cancellationToken = default)
+        {
+            LastAddedSelections.AddRange(selections);
+            return Task.FromResult(new ValidationResult());
+        }
+
+        public Task<IReadOnlyCollection<AppointmentServiceSelection>> ListByAppointmentIdsAsync(IEnumerable<Guid> appointmentIds, CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(SelectionsByAppointmentIds);
+        }
+    }
+
+    private sealed class FakeBarbershopRepository : IBarbershopRepository
+    {
+        public IReadOnlyCollection<Barbershop> BarbershopsByIds { get; set; } = Array.Empty<Barbershop>();
+
+        public Task<ValidationResult> AddAsync(Barbershop barbershop, CancellationToken cancellationToken = default) => Task.FromResult(new ValidationResult());
+        public Task<Barbershop?> GetByIdAsync(Guid barbershopId, CancellationToken cancellationToken = default) => Task.FromResult(BarbershopsByIds.FirstOrDefault(x => x.Id == barbershopId));
+        public Task<IReadOnlyCollection<Barbershop>> ListByIdsAsync(IEnumerable<Guid> barbershopIds, CancellationToken cancellationToken = default) => Task.FromResult(BarbershopsByIds);
+        public Task<IReadOnlyCollection<Barbershop>> ListAsync(string? city = null, CancellationToken cancellationToken = default) => Task.FromResult(BarbershopsByIds);
+        public Task<ValidationResult> UpdateAsync(Barbershop barbershop, CancellationToken cancellationToken = default) => Task.FromResult(new ValidationResult());
+    }
+
+    private sealed class FakeClientRepository : IClientRepository
+    {
+        public IReadOnlyCollection<Client> ClientsByIds { get; set; } = Array.Empty<Client>();
+
+        public Task<Client?> GetByIdAsync(Guid clientId, CancellationToken cancellationToken = default) => Task.FromResult(ClientsByIds.FirstOrDefault(x => x.Id == clientId));
+        public Task<Client?> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default) => Task.FromResult(ClientsByIds.FirstOrDefault(x => x.UserId == userId));
+        public Task<IReadOnlyCollection<Client>> ListByIdsAsync(IEnumerable<Guid> clientIds, CancellationToken cancellationToken = default) => Task.FromResult(ClientsByIds);
+        public Task<ValidationResult> AddAsync(Client client, CancellationToken cancellationToken = default) => Task.FromResult(new ValidationResult());
+    }
+
+    private sealed class FakeServiceOfferingRepository : IServiceOfferingRepository
+    {
+        public IReadOnlyCollection<ServiceOffering> ServicesByIds { get; set; } = Array.Empty<ServiceOffering>();
+
+        public Task<ValidationResult> AddAsync(ServiceOffering serviceOffering, CancellationToken cancellationToken = default) => Task.FromResult(new ValidationResult());
+        public Task<IReadOnlyCollection<ServiceOffering>> ListByIdsAsync(IEnumerable<Guid> serviceOfferingIds, CancellationToken cancellationToken = default) => Task.FromResult(ServicesByIds);
+        public Task<IReadOnlyCollection<ServiceOffering>> ListByBarbershopAsync(Guid barbershopId, CancellationToken cancellationToken = default) => Task.FromResult(ServicesByIds.Where(x => x.BarbershopId == barbershopId).ToArray() as IReadOnlyCollection<ServiceOffering>);
+    }
+
+    private sealed class FakeUserRepository : IUserRepository
+    {
+        public IReadOnlyCollection<User> UsersByIds { get; set; } = Array.Empty<User>();
+
+        public Task<User?> GetByIdAsync(Guid userId, CancellationToken cancellationToken = default) => Task.FromResult(UsersByIds.FirstOrDefault(x => x.Id == userId));
+        public Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default) => Task.FromResult(UsersByIds.FirstOrDefault(x => x.Email == email));
+        public Task<IReadOnlyCollection<User>> ListByIdsAsync(IEnumerable<Guid> userIds, CancellationToken cancellationToken = default) => Task.FromResult(UsersByIds);
+        public Task<ValidationResult> AddAsync(User user, CancellationToken cancellationToken = default) => Task.FromResult(new ValidationResult());
     }
 }

@@ -25,6 +25,6 @@ public static class AppointmentMapping
         BarbershopId = entity.BarbershopId,
         ScheduledAtUtc = entity.ScheduledAtUtc,
         TotalPrice = entity.TotalPrice,
-        Status = entity.Status.ToString(),
+        Status = entity.Status.ToString()
     };
 }

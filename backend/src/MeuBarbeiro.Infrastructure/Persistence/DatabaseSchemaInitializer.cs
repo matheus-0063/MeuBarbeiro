@@ -58,6 +58,13 @@ public sealed class DatabaseSchemaInitializer
             "DurationMinutes" INTEGER NOT NULL
         );
         """;
+    private const string CreateAppointmentServiceSelectionsTableSql = """
+        CREATE TABLE IF NOT EXISTS "AppointmentServiceSelections" (
+            "Id" TEXT NOT NULL CONSTRAINT "PK_AppointmentServiceSelections" PRIMARY KEY,
+            "AppointmentId" TEXT NOT NULL,
+            "ServiceOfferingId" TEXT NOT NULL
+        );
+        """;
 
     public async Task EnsureSchemaAsync(AppDbContext dbContext, CancellationToken cancellationToken = default)
     {
@@ -71,5 +78,6 @@ public sealed class DatabaseSchemaInitializer
         await dbContext.Database.ExecuteSqlRawAsync(CreateBarbershopsTableSql, cancellationToken);
         await dbContext.Database.ExecuteSqlRawAsync(CreateEventProcessingAuditsTableSql, cancellationToken);
         await dbContext.Database.ExecuteSqlRawAsync(CreateServiceOfferingsTableSql, cancellationToken);
+        await dbContext.Database.ExecuteSqlRawAsync(CreateAppointmentServiceSelectionsTableSql, cancellationToken);
     }
 }

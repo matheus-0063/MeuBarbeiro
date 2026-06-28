@@ -35,6 +35,7 @@ dependencies:
   meu_barbeiro_core:
     path: ../../packages/meu_barbeiro_core
   http: ^1.5.0
+  intl: ^0.20.2
 
   cupertino_icons: ^1.0.8
 

@@ -15,6 +15,15 @@ public class SqliteServiceOfferingRepository(AppDbContext dbContext) : IServiceO
         return new ValidationResult();
     }
 
+    public async Task<IReadOnlyCollection<ServiceOffering>> ListByIdsAsync(IEnumerable<Guid> serviceOfferingIds, CancellationToken cancellationToken = default)
+    {
+        var ids = serviceOfferingIds.Distinct().ToArray();
+
+        return await dbContext.ServiceOfferings
+            .Where(service => ids.Contains(service.Id))
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<IReadOnlyCollection<ServiceOffering>> ListByBarbershopAsync(Guid barbershopId, CancellationToken cancellationToken = default)
     {
         return await dbContext.ServiceOfferings

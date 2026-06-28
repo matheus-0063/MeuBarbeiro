@@ -73,6 +73,7 @@ public class Worker(ILogger<Worker> logger, IRabbitMqConnectionProvider connecti
         var message = JsonSerializer.Deserialize<AppointmentRequestedIntegrationEvent>(payload, JsonOptions)
                       ?? throw new InvalidOperationException("Payload AppointmentRequested invalido.");
 
+        await MarkAppointmentAsInProgressAsync(message.AppointmentId);
         logger.LogInformation("Consumed event AppointmentRequested from queue {QueueName} for appointment {AppointmentId}.", queueName, message.AppointmentId);
         await PersistAuditAsync(nameof(AppointmentRequestedIntegrationEvent), queueName, payload, "Processed");
     }
@@ -109,5 +110,28 @@ public class Worker(ILogger<Worker> logger, IRabbitMqConnectionProvider connecti
         {
             logger.LogError(ex, "Falha ao persistir auditoria do evento {EventName} na fila {QueueName}.", eventName, queueName);
         }
+    }
+
+    private async Task MarkAppointmentAsInProgressAsync(Guid appointmentId)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        var appointment = await dbContext.Appointments.FirstOrDefaultAsync(item => item.Id == appointmentId);
+        if (appointment is null)
+        {
+            logger.LogWarning("Appointment {AppointmentId} nao encontrado para marcar como InProgress.", appointmentId);
+            return;
+        }
+
+        if (appointment.Status == Domain.Enums.AppointmentStatus.InProgress)
+        {
+            return;
+        }
+
+        appointment.AlterStatus(Domain.Enums.AppointmentStatus.InProgress);
+        await dbContext.SaveChangesAsync();
+
+        logger.LogInformation("Appointment {AppointmentId} atualizado para InProgress apos processamento do evento.", appointmentId);
     }
 }

@@ -21,6 +21,15 @@ public class SqliteBarbershopRepository(AppDbContext dbContext) : IBarbershopRep
             .FirstOrDefaultAsync(barbershop => barbershop.Id == barbershopId, cancellationToken);
     }
 
+    public async Task<IReadOnlyCollection<Barbershop>> ListByIdsAsync(IEnumerable<Guid> barbershopIds, CancellationToken cancellationToken = default)
+    {
+        var ids = barbershopIds.Distinct().ToArray();
+
+        return await dbContext.Barbershops
+            .Where(barbershop => ids.Contains(barbershop.Id))
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<ValidationResult> UpdateAsync(Barbershop barbershop, CancellationToken cancellationToken = default)
     {
         dbContext.Barbershops.Update(barbershop);

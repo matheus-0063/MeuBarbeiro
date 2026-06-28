@@ -19,6 +19,15 @@ public class SqliteUserRepository(AppDbContext dbContext) : IUserRepository
             .FirstOrDefaultAsync(user => user.Email == email, cancellationToken);
     }
 
+    public async Task<IReadOnlyCollection<User>> ListByIdsAsync(IEnumerable<Guid> userIds, CancellationToken cancellationToken = default)
+    {
+        var ids = userIds.Distinct().ToArray();
+
+        return await dbContext.Users
+            .Where(user => ids.Contains(user.Id))
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<ValidationResult> AddAsync(User user, CancellationToken cancellationToken = default)
     {
         dbContext.Users.Add(user);

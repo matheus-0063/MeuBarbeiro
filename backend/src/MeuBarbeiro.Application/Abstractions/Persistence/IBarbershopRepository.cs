@@ -8,5 +8,6 @@ public interface IBarbershopRepository
     Task<ValidationResult> AddAsync(Barbershop barbershop, CancellationToken cancellationToken = default);
     Task<ValidationResult> UpdateAsync(Barbershop barbershop, CancellationToken cancellationToken = default);
     Task<Barbershop?> GetByIdAsync(Guid barbershopId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyCollection<Barbershop>> ListByIdsAsync(IEnumerable<Guid> barbershopIds, CancellationToken cancellationToken = default);
     Task<IReadOnlyCollection<Barbershop>> ListAsync(string? city = null, CancellationToken cancellationToken = default);
 }

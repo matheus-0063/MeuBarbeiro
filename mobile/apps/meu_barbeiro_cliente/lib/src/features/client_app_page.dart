@@ -16,13 +16,13 @@ class _ClientAppPageState extends State<ClientAppPage> {
   final BackendApi _api = BackendApi();
   final LocalStore _localStore = LocalStore();
 
-  late final TextEditingController _apiBaseUrlController;
   late final TextEditingController _loginEmailController;
   late final TextEditingController _loginPasswordController;
   late final TextEditingController _registerNameController;
   late final TextEditingController _registerEmailController;
   late final TextEditingController _registerPasswordController;
   late final TextEditingController _cityController;
+  late final String _apiBaseUrl;
 
   AuthSession? _session;
   bool _isBootstrapping = true;
@@ -41,9 +41,7 @@ class _ClientAppPageState extends State<ClientAppPage> {
   @override
   void initState() {
     super.initState();
-    _apiBaseUrlController = TextEditingController(
-      text: _resolveDefaultApiBaseUrl(),
-    );
+    _apiBaseUrl = _resolveDefaultApiBaseUrl();
     _loginEmailController = TextEditingController();
     _loginPasswordController = TextEditingController();
     _registerNameController = TextEditingController();
@@ -72,7 +70,6 @@ class _ClientAppPageState extends State<ClientAppPage> {
 
   @override
   void dispose() {
-    _apiBaseUrlController.dispose();
     _loginEmailController.dispose();
     _loginPasswordController.dispose();
     _registerNameController.dispose();
@@ -84,10 +81,6 @@ class _ClientAppPageState extends State<ClientAppPage> {
 
   Future<void> _bootstrap() async {
     final storedSession = await _localStore.loadSession();
-    final storedApiBaseUrl = await _localStore.loadApiBaseUrl();
-    if (storedApiBaseUrl != null && storedApiBaseUrl.isNotEmpty) {
-      _apiBaseUrlController.text = storedApiBaseUrl;
-    }
 
     if (!mounted) {
       return;
@@ -135,16 +128,12 @@ class _ClientAppPageState extends State<ClientAppPage> {
     });
   }
 
-  Future<void> _saveApiBaseUrl() async {
-    await _localStore.saveApiBaseUrl(_apiBaseUrlController.text.trim());
-  }
-
   Future<void> _submitLogin() async {
     setState(() => _isAuthBusy = true);
 
     try {
       final session = await _api.login(
-        baseUrl: _apiBaseUrlController.text.trim(),
+        baseUrl: _apiBaseUrl,
         email: _loginEmailController.text.trim(),
         password: _loginPasswordController.text,
       );
@@ -155,7 +144,6 @@ class _ClientAppPageState extends State<ClientAppPage> {
         );
       }
 
-      await _saveApiBaseUrl();
       await _setSession(session);
       _showMessage('Login realizado com sucesso.');
     } catch (error) {
@@ -172,13 +160,12 @@ class _ClientAppPageState extends State<ClientAppPage> {
 
     try {
       final session = await _api.registerClient(
-        baseUrl: _apiBaseUrlController.text.trim(),
+        baseUrl: _apiBaseUrl,
         name: _registerNameController.text.trim(),
         email: _registerEmailController.text.trim(),
         password: _registerPasswordController.text,
       );
 
-      await _saveApiBaseUrl();
       await _setSession(session);
       _showMessage('Cadastro realizado com sucesso.');
     } catch (error) {
@@ -198,7 +185,7 @@ class _ClientAppPageState extends State<ClientAppPage> {
 
     try {
       final shops = await _api.listBarbershops(
-        baseUrl: _apiBaseUrlController.text.trim(),
+        baseUrl: _apiBaseUrl,
         city: _cityController.text.trim(),
       );
 
@@ -238,7 +225,7 @@ class _ClientAppPageState extends State<ClientAppPage> {
 
     try {
       final appointments = await _api.getMyAppointments(
-        baseUrl: _apiBaseUrlController.text.trim(),
+        baseUrl: _apiBaseUrl,
         accessToken: session.accessToken,
         status: _statusFilter,
       );
@@ -253,10 +240,22 @@ class _ClientAppPageState extends State<ClientAppPage> {
       });
 
       for (final appointment in appointments) {
+        if (appointment.barbershopName.isNotEmpty &&
+            !_barbershopCache.containsKey(appointment.barbershopId)) {
+          _barbershopCache[appointment.barbershopId] = BarbershopSummary(
+            id: appointment.barbershopId,
+            name: appointment.barbershopName,
+            city: '',
+            address: '',
+            description: '',
+            averageRating: 0,
+          );
+        }
+
         if (!_barbershopCache.containsKey(appointment.barbershopId)) {
           try {
             final shop = await _api.getBarbershop(
-              baseUrl: _apiBaseUrlController.text.trim(),
+              baseUrl: _apiBaseUrl,
               barbershopId: appointment.barbershopId,
             );
             _barbershopCache[shop.id] = shop;
@@ -288,7 +287,7 @@ class _ClientAppPageState extends State<ClientAppPage> {
       case 'Rejected':
         return 'Recusado';
       case 'InProgress':
-        return 'Em andamento';
+        return 'Em analise';
       case 'Completed':
         return 'Concluido';
       case 'Cancelled':
@@ -355,7 +354,7 @@ class _ClientAppPageState extends State<ClientAppPage> {
       MaterialPageRoute(
         builder: (context) => BarbershopBookingPage(
           api: _api,
-          baseUrl: _apiBaseUrlController.text.trim(),
+          baseUrl: _apiBaseUrl,
           session: session,
           shop: shop,
         ),
@@ -377,7 +376,6 @@ class _ClientAppPageState extends State<ClientAppPage> {
     if (_session == null) {
       return _AuthScreen(
         authTab: _authTab,
-        apiBaseUrlController: _apiBaseUrlController,
         loginEmailController: _loginEmailController,
         loginPasswordController: _loginPasswordController,
         registerNameController: _registerNameController,
@@ -521,15 +519,6 @@ class _ClientAppPageState extends State<ClientAppPage> {
                   onTap: () => _openBookingScreen(shop),
                 ),
               ),
-          const SizedBox(height: 24),
-          Text('Observacao', style: theme.textTheme.titleLarge),
-          const SizedBox(height: 12),
-          _SectionCard(
-            child: Text(
-              'Ao tocar em uma barbearia, o app abre uma tela dedicada de agendamento com os servicos e horarios comerciais disponiveis.',
-              style: theme.textTheme.bodyMedium,
-            ),
-          ),
         ],
       ),
     );
@@ -613,8 +602,10 @@ class _ClientAppPageState extends State<ClientAppPage> {
                         children: [
                           Expanded(
                             child: Text(
-                              _barbershopCache[appointment.barbershopId]
-                                      ?.name ??
+                              appointment.barbershopName.isNotEmpty
+                                  ? appointment.barbershopName
+                                  : _barbershopCache[appointment.barbershopId]
+                                        ?.name ??
                                   'Barbearia ${appointment.barbershopId.substring(0, 8)}',
                               style: theme.textTheme.titleMedium,
                             ),
@@ -643,6 +634,15 @@ class _ClientAppPageState extends State<ClientAppPage> {
                         _dateLabel(appointment.scheduledAtUtc),
                         style: theme.textTheme.bodyLarge,
                       ),
+                      if (appointment.selectedServices.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          appointment.selectedServices
+                              .map((service) => service.name)
+                              .join(' • '),
+                          style: theme.textTheme.bodyMedium,
+                        ),
+                      ],
                       const SizedBox(height: 6),
                       Text(
                         NumberFormat.currency(
@@ -668,9 +668,8 @@ class _ClientAppPageState extends State<ClientAppPage> {
       children: [
         _HeroBanner(
           eyebrow: 'Conta',
-          title: 'Sessao autenticada e configuracao da API do cliente.',
-          subtitle:
-              'Seu token fica salvo localmente para manter a navegacao entre login, catalogo e agenda.',
+          title: 'Seus dados e sua conta.',
+          subtitle: 'Acompanhe seus acessos e saia da conta quando quiser.',
         ),
         const SizedBox(height: 24),
         _SectionCard(
@@ -680,76 +679,8 @@ class _ClientAppPageState extends State<ClientAppPage> {
               Text(_session!.name, style: theme.textTheme.titleMedium),
               const SizedBox(height: 4),
               Text(_session!.email, style: theme.textTheme.bodyMedium),
-              const SizedBox(height: 4),
-              Text('Role: ${_session!.role}', style: theme.textTheme.bodySmall),
               const SizedBox(height: 20),
-              Text('API base URL', style: theme.textTheme.labelLarge),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _apiBaseUrlController,
-                decoration: const InputDecoration(
-                  hintText: 'http://10.0.2.2:5039',
-                  prefixIcon: Icon(Icons.link_outlined),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Android Emulator: http://10.0.2.2:5039. Dispositivo fisico: use o IP do Mac. iOS Simulator: http://localhost:5039.',
-                style: theme.textTheme.bodySmall,
-              ),
-              const SizedBox(height: 20),
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: [
-                  FilledButton(
-                    onPressed: () async {
-                      await _saveApiBaseUrl();
-                      await _loadInitialClientData();
-                      _showMessage('Configuracao salva e dados recarregados.');
-                    },
-                    child: const Text('Salvar e recarregar'),
-                  ),
-                  OutlinedButton(onPressed: _logout, child: const Text('Sair')),
-                ],
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        _SectionCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Cobertura atual do backend',
-                style: theme.textTheme.titleMedium,
-              ),
-              const SizedBox(height: 12),
-              const _InfoRow(
-                icon: Icons.check_circle_outline,
-                title: 'Autenticacao do cliente',
-                subtitle:
-                    'POST /api/v1/auth/register/client e POST /api/v1/auth/login',
-              ),
-              const _InfoRow(
-                icon: Icons.check_circle_outline,
-                title: 'Busca de barbearias e servicos',
-                subtitle:
-                    'GET /api/v1/barbershop e GET /api/v1/services?barbershopId=...',
-              ),
-              const _InfoRow(
-                icon: Icons.check_circle_outline,
-                title: 'Criacao e consulta de agendamentos',
-                subtitle:
-                    'POST /api/v1/appointment e GET /api/v1/appointment/mine',
-              ),
-              const _InfoRow(
-                icon: Icons.check_circle_outline,
-                title: 'Barbeiro resolvido pela API',
-                subtitle:
-                    'O app envia apenas o BarbershopId e o backend escolhe o barbeiro vinculado.',
-              ),
+              FilledButton(onPressed: _logout, child: const Text('Sair')),
             ],
           ),
         ),
@@ -761,7 +692,6 @@ class _ClientAppPageState extends State<ClientAppPage> {
 class _AuthScreen extends StatelessWidget {
   const _AuthScreen({
     required this.authTab,
-    required this.apiBaseUrlController,
     required this.loginEmailController,
     required this.loginPasswordController,
     required this.registerNameController,
@@ -774,7 +704,6 @@ class _AuthScreen extends StatelessWidget {
   });
 
   final int authTab;
-  final TextEditingController apiBaseUrlController;
   final TextEditingController loginEmailController;
   final TextEditingController loginPasswordController;
   final TextEditingController registerNameController;
@@ -787,8 +716,6 @@ class _AuthScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Scaffold(
       body: SafeArea(
         child: ListView(
@@ -798,24 +725,13 @@ class _AuthScreen extends StatelessWidget {
               eyebrow: 'Meu Barbeiro',
               title:
                   'Entre como cliente para buscar barbearias e agendar servicos.',
-              subtitle:
-                  'O app agora usa autenticacao real, carrega o catalogo do backend e consulta a agenda protegida.',
+              subtitle: 'Encontre a barbearia ideal e acompanhe seus horarios.',
             ),
             const SizedBox(height: 24),
             _SectionCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('API base URL', style: theme.textTheme.labelLarge),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: apiBaseUrlController,
-                    decoration: const InputDecoration(
-                      hintText: 'http://10.0.2.2:5039',
-                      prefixIcon: Icon(Icons.link_outlined),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
                   SegmentedButton<int>(
                     segments: const [
                       ButtonSegment(value: 0, label: Text('Login')),
@@ -1059,47 +975,6 @@ class _ShopCard extends StatelessWidget {
   }
 }
 
-class _InfoRow extends StatelessWidget {
-  const _InfoRow({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(top: 2),
-            child: Icon(icon, size: 18, color: const Color(0xFF1A3C34)),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: theme.textTheme.labelLarge),
-                const SizedBox(height: 2),
-                Text(subtitle, style: theme.textTheme.bodySmall),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class BarbershopBookingPage extends StatefulWidget {
   const BarbershopBookingPage({
     super.key,
@@ -1231,6 +1106,7 @@ class _BarbershopBookingPageState extends State<BarbershopBookingPage> {
         baseUrl: widget.baseUrl,
         accessToken: widget.session.accessToken,
         barbershopId: widget.shop.id,
+        serviceIds: _selectedServiceIds.toList(),
         scheduledAtUtc: localDateTime.toUtc(),
         totalPrice: _selectedTotalPrice,
       );

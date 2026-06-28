@@ -7,6 +7,7 @@ namespace MeuBarbeiro.Infrastructure.Persistence;
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
     public DbSet<Appointment> Appointments => Set<Appointment>();
+    public DbSet<AppointmentServiceSelection> AppointmentServiceSelections => Set<AppointmentServiceSelection>();
     public DbSet<Barber> Barbers => Set<Barber>();
     public DbSet<Barbershop> Barbershops => Set<Barbershop>();
     public DbSet<Client> Clients => Set<Client>();
@@ -17,6 +18,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfiguration(new AppointmentConfiguration());
+        modelBuilder.ApplyConfiguration(new AppointmentServiceSelectionConfiguration());
         modelBuilder.ApplyConfiguration(new BarberConfiguration());
         modelBuilder.ApplyConfiguration(new BarbershopConfiguration());
         modelBuilder.ApplyConfiguration(new ClientConfiguration());

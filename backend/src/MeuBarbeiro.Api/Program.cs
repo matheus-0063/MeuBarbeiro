@@ -85,6 +85,7 @@ builder.Services.AddSingleton<IRabbitMqConnectionProvider, RabbitMqConnectionPro
 builder.Services.AddSingleton<RabbitMqTopologyInitializer>();
 builder.Services.AddScoped<IEventPublisher, RabbitMqEventPublisher>();
 builder.Services.AddScoped<IAppointmentRepository, SqliteAppointmentRepository>();
+builder.Services.AddScoped<IAppointmentServiceSelectionRepository, SqliteAppointmentServiceSelectionRepository>();
 builder.Services.AddScoped<IBarberRepository, SqliteBarberRepository>();
 builder.Services.AddScoped<IBarbershopRepository, SqliteBarbershopRepository>();
 builder.Services.AddScoped<IClientRepository, SqliteClientRepository>();

@@ -122,6 +122,7 @@ class BackendApi {
     required String baseUrl,
     required String accessToken,
     required String barbershopId,
+    required List<String> serviceIds,
     required DateTime scheduledAtUtc,
     required double totalPrice,
   }) async {
@@ -130,6 +131,7 @@ class BackendApi {
       headers: _authHeaders(accessToken),
       body: jsonEncode({
         'barbershopId': barbershopId,
+        'serviceIds': serviceIds,
         'scheduledAtUtc': scheduledAtUtc.toIso8601String(),
         'totalPrice': totalPrice,
       }),
@@ -303,39 +305,73 @@ class ClientAppointment {
   const ClientAppointment({
     required this.id,
     required this.clientId,
+    required this.clientName,
     required this.barberId,
     required this.barbershopId,
+    required this.barbershopName,
     required this.scheduledAtUtc,
     required this.totalPrice,
     required this.status,
+    required this.selectedServices,
   });
 
   factory ClientAppointment.fromJson(Map<String, dynamic> json) {
     return ClientAppointment(
       id: json['id'] as String,
       clientId: json['clientId'] as String,
+      clientName: (json['clientName'] as String?) ?? '',
       barberId: json['barberId'] as String,
       barbershopId: json['barbershopId'] as String,
+      barbershopName: (json['barbershopName'] as String?) ?? '',
       scheduledAtUtc: DateTime.parse(json['scheduledAtUtc'] as String),
       totalPrice: (json['totalPrice'] as num).toDouble(),
       status: json['status'] as String,
+      selectedServices: ((json['selectedServices'] as List<dynamic>?) ?? const [])
+          .map((item) => AppointmentSelectedService.fromJson(item as Map<String, dynamic>))
+          .toList(),
     );
   }
 
   final String id;
   final String clientId;
+  final String clientName;
   final String barberId;
   final String barbershopId;
+  final String barbershopName;
   final DateTime scheduledAtUtc;
   final double totalPrice;
   final String status;
+  final List<AppointmentSelectedService> selectedServices;
+}
+
+class AppointmentSelectedService {
+  const AppointmentSelectedService({
+    required this.serviceId,
+    required this.name,
+    required this.price,
+    required this.durationMinutes,
+  });
+
+  factory AppointmentSelectedService.fromJson(Map<String, dynamic> json) {
+    return AppointmentSelectedService(
+      serviceId: json['serviceId'] as String,
+      name: json['name'] as String,
+      price: (json['price'] as num).toDouble(),
+      durationMinutes: json['durationMinutes'] as int,
+    );
+  }
+
+  final String serviceId;
+  final String name;
+  final double price;
+  final int durationMinutes;
 }
 
 enum AppointmentStatusFilter {
   pending('Pending', 'Pendentes'),
   accepted('Accepted', 'Aceitos'),
   rejected('Rejected', 'Recusados'),
-  inProgress('InProgress', 'Em andamento'),
+  inProgress('InProgress', 'Em analise'),
   completed('Completed', 'Concluidos'),
   cancelled('Cancelled', 'Cancelados');
 

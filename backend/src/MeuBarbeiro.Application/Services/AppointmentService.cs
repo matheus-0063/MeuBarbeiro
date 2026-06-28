@@ -13,7 +13,12 @@ namespace MeuBarbeiro.Application.Services;
 
 public class AppointmentService(
     IAppointmentRepository appointmentRepository,
+    IAppointmentServiceSelectionRepository appointmentServiceSelectionRepository,
     IBarberRepository barberRepository,
+    IBarbershopRepository barbershopRepository,
+    IClientRepository clientRepository,
+    IServiceOfferingRepository serviceOfferingRepository,
+    IUserRepository userRepository,
     IEventPublisher eventPublisher) : IAppointmentService
 {
     public async Task<ServiceResult<Guid>> CreateAppointment(CreateAppointmentRequestDto request, Guid clientId)
@@ -26,12 +31,42 @@ public class AppointmentService(
             return ServiceResult<Guid>.Failure(barberValidationResult);
         }
 
+        if (request.ServiceIds.Count == 0)
+        {
+            var serviceValidationResult = new ValidationResult();
+            serviceValidationResult.Errors.Add(new ValidationFailure(nameof(request.ServiceIds), "Selecione pelo menos um servico."));
+            return ServiceResult<Guid>.Failure(serviceValidationResult);
+        }
+
+        var selectedServices = await serviceOfferingRepository.ListByIdsAsync(request.ServiceIds);
+        if (selectedServices.Count != request.ServiceIds.Distinct().Count() || selectedServices.Any(service => service.BarbershopId != request.BarbershopId))
+        {
+            var serviceValidationResult = new ValidationResult();
+            serviceValidationResult.Errors.Add(new ValidationFailure(nameof(request.ServiceIds), "Um ou mais servicos selecionados nao pertencem a barbearia."));
+            return ServiceResult<Guid>.Failure(serviceValidationResult);
+        }
+
         var appointment = request.ToEntity(clientId, barber.Id);
         var validationResult = await appointmentRepository.AddAsync(appointment);
 
         if (!validationResult.IsValid)
         {
             return ServiceResult<Guid>.Failure(validationResult);
+        }
+
+        var selections = request.ServiceIds
+            .Distinct()
+            .Select(serviceId => new AppointmentServiceSelection
+            {
+                AppointmentId = appointment.Id,
+                ServiceOfferingId = serviceId
+            })
+            .ToArray();
+
+        var selectionValidationResult = await appointmentServiceSelectionRepository.AddRangeAsync(selections);
+        if (!selectionValidationResult.IsValid)
+        {
+            return ServiceResult<Guid>.Failure(selectionValidationResult);
         }
 
         await eventPublisher.PublishAsync(new AppointmentRequestedIntegrationEvent(
@@ -48,9 +83,13 @@ public class AppointmentService(
     public async Task<ServiceResult<AppointmentResponseDto>> GetAppointment(Guid id)
     {
         var appointment = await appointmentRepository.GetByIdAsync(id);
-        return appointment == null
-            ? ServiceResult<AppointmentResponseDto>.NotFound()
-            : ServiceResult<AppointmentResponseDto>.Success(appointment.ToResponseDto());
+        if (appointment == null)
+        {
+            return ServiceResult<AppointmentResponseDto>.NotFound();
+        }
+
+        var response = await BuildResponseDtosAsync([appointment]);
+        return ServiceResult<AppointmentResponseDto>.Success(response.Single());
     }
 
     public async Task<ServiceResult<IEnumerable<AppointmentResponseDto>>> GetListAppointments(Guid userId, AppointmentUserType userType, AppointmentStatus? status = null, CancellationToken cancellationToken = default)
@@ -81,7 +120,7 @@ public class AppointmentService(
                 .ToArray();
         }
 
-        var response = appointments.Select(appointment => appointment.ToResponseDto());
+        var response = await BuildResponseDtosAsync(appointments, cancellationToken);
         return ServiceResult<IEnumerable<AppointmentResponseDto>>.Success(response);
     }
 
@@ -109,5 +148,65 @@ public class AppointmentService(
             DateTime.UtcNow));
 
         return ServiceResult<bool>.Success(true);
+    }
+
+    private async Task<IReadOnlyCollection<AppointmentResponseDto>> BuildResponseDtosAsync(IEnumerable<Appointment> appointments, CancellationToken cancellationToken = default)
+    {
+        var appointmentList = appointments.ToArray();
+        if (appointmentList.Length == 0)
+        {
+            return [];
+        }
+
+        var clients = await clientRepository.ListByIdsAsync(appointmentList.Select(appointment => appointment.ClientId), cancellationToken);
+        var users = await userRepository.ListByIdsAsync(clients.Select(client => client.UserId), cancellationToken);
+        var barbershops = await barbershopRepository.ListByIdsAsync(appointmentList.Select(appointment => appointment.BarbershopId), cancellationToken);
+        var selections = await appointmentServiceSelectionRepository.ListByAppointmentIdsAsync(appointmentList.Select(appointment => appointment.Id), cancellationToken);
+        var services = await serviceOfferingRepository.ListByIdsAsync(selections.Select(selection => selection.ServiceOfferingId), cancellationToken);
+
+        var clientsById = clients.ToDictionary(client => client.Id);
+        var usersById = users.ToDictionary(user => user.Id);
+        var barbershopsById = barbershops.ToDictionary(barbershop => barbershop.Id);
+        var servicesById = services.ToDictionary(service => service.Id);
+        var selectionsByAppointmentId = selections
+            .GroupBy(selection => selection.AppointmentId)
+            .ToDictionary(group => group.Key, group => (IReadOnlyCollection<AppointmentServiceSelection>)group.ToArray());
+
+        return appointmentList.Select(appointment =>
+        {
+            var dto = appointment.ToResponseDto();
+
+            if (clientsById.TryGetValue(appointment.ClientId, out var client)
+                && usersById.TryGetValue(client.UserId, out var user))
+            {
+                dto.ClientName = user.Name;
+            }
+
+            if (barbershopsById.TryGetValue(appointment.BarbershopId, out var barbershop))
+            {
+                dto.BarbershopName = barbershop.Name;
+            }
+
+            if (selectionsByAppointmentId.TryGetValue(appointment.Id, out var appointmentSelections))
+            {
+                dto.SelectedServices = appointmentSelections
+                    .Where(selection => servicesById.ContainsKey(selection.ServiceOfferingId))
+                    .Select(selection =>
+                    {
+                        var service = servicesById[selection.ServiceOfferingId];
+
+                        return new AppointmentSelectedServiceDto
+                        {
+                            ServiceId = service.Id,
+                            Name = service.Name,
+                            Price = service.Price,
+                            DurationMinutes = service.DurationMinutes
+                        };
+                    })
+                    .ToArray();
+            }
+
+            return dto;
+        }).ToArray();
     }
 }
