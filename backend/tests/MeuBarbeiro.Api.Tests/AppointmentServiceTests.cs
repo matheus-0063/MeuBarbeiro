@@ -32,6 +32,7 @@ public class AppointmentServiceTests
             barberRepository,
             new FakeBarbershopRepository(),
             new FakeClientRepository(),
+            new FakeReviewRepository(),
             serviceOfferingRepository,
             new FakeUserRepository(),
             publisher);
@@ -75,6 +76,7 @@ public class AppointmentServiceTests
             barberRepository,
             new FakeBarbershopRepository(),
             new FakeClientRepository(),
+            new FakeReviewRepository(),
             serviceOfferingRepository,
             new FakeUserRepository(),
             publisher);
@@ -101,6 +103,7 @@ public class AppointmentServiceTests
             barberRepository,
             new FakeBarbershopRepository(),
             new FakeClientRepository(),
+            new FakeReviewRepository(),
             new FakeServiceOfferingRepository(),
             new FakeUserRepository(),
             publisher);
@@ -138,6 +141,87 @@ public class AppointmentServiceTests
         Assert.Equal(appointment.Status.ToString(), result.Data.Status);
         Assert.Equal("Cliente Teste", result.Data.ClientName);
         Assert.Equal("Barbearia A", result.Data.BarbershopName);
+    }
+
+    [Fact]
+    public async Task CreateReview_ShouldReturnSuccess_WhenAppointmentIsCompletedAndNotReviewed()
+    {
+        var appointment = BuildAppointment(status: AppointmentStatus.Completed);
+        var repository = new FakeAppointmentRepository
+        {
+            AppointmentById = appointment
+        };
+        var reviewRepository = new FakeReviewRepository();
+        var barbershopRepository = new FakeBarbershopRepository
+        {
+            BarbershopsByIds = [BuildBarbershop(id: appointment.BarbershopId, name: "Barbearia Review")]
+        };
+
+        var service = BuildService(
+            repository: repository,
+            reviewRepository: reviewRepository,
+            barbershopRepository: barbershopRepository);
+
+        var result = await service.CreateReview(
+            appointment.Id,
+            appointment.ClientId,
+            new CreateAppointmentReviewRequestDto { Stars = 5 });
+
+        Assert.True(result.IsValid);
+        Assert.NotNull(result.Data);
+        Assert.Single(reviewRepository.AddedReviews);
+        Assert.Equal(5, reviewRepository.AddedReviews[0].Stars);
+    }
+
+    [Fact]
+    public async Task CreateReview_ShouldReturnFailure_WhenAppointmentIsNotCompleted()
+    {
+        var appointment = BuildAppointment(status: AppointmentStatus.Accepted);
+        var repository = new FakeAppointmentRepository
+        {
+            AppointmentById = appointment
+        };
+
+        var service = BuildService(repository: repository);
+
+        var result = await service.CreateReview(
+            appointment.Id,
+            appointment.ClientId,
+            new CreateAppointmentReviewRequestDto { Stars = 4 });
+
+        Assert.False(result.IsValid);
+        Assert.Contains(result.ValidationResult.Errors, error => error.ErrorMessage.Contains("concluidos"));
+    }
+
+    [Fact]
+    public async Task CreateReview_ShouldReturnFailure_WhenAppointmentAlreadyHasReview()
+    {
+        var appointment = BuildAppointment(status: AppointmentStatus.Completed);
+        var repository = new FakeAppointmentRepository
+        {
+            AppointmentById = appointment
+        };
+        var reviewRepository = new FakeReviewRepository
+        {
+            ReviewByAppointmentId = new Review
+            {
+                AppointmentId = appointment.Id,
+                ClientId = appointment.ClientId,
+                BarberId = appointment.BarberId,
+                BarbershopId = appointment.BarbershopId,
+                Stars = 5
+            }
+        };
+
+        var service = BuildService(repository: repository, reviewRepository: reviewRepository);
+
+        var result = await service.CreateReview(
+            appointment.Id,
+            appointment.ClientId,
+            new CreateAppointmentReviewRequestDto { Stars = 4 });
+
+        Assert.False(result.IsValid);
+        Assert.Contains(result.ValidationResult.Errors, error => error.ErrorMessage.Contains("ja foi avaliado"));
     }
 
     [Fact]
@@ -411,6 +495,7 @@ public class AppointmentServiceTests
         FakeBarberRepository? barberRepository = null,
         FakeBarbershopRepository? barbershopRepository = null,
         FakeClientRepository? clientRepository = null,
+        FakeReviewRepository? reviewRepository = null,
         FakeServiceOfferingRepository? serviceOfferingRepository = null,
         FakeUserRepository? userRepository = null,
         FakeEventPublisher? publisher = null,
@@ -450,6 +535,7 @@ public class AppointmentServiceTests
             barberRepository ?? new FakeBarberRepository(),
             fakeBarbershopRepository,
             fakeClientRepository,
+            reviewRepository ?? new FakeReviewRepository(),
             serviceOfferingRepository ?? new FakeServiceOfferingRepository(),
             fakeUserRepository,
             publisher ?? new FakeEventPublisher());
@@ -595,6 +681,29 @@ public class AppointmentServiceTests
         public Task<ValidationResult> AddAsync(ServiceOffering serviceOffering, CancellationToken cancellationToken = default) => Task.FromResult(new ValidationResult());
         public Task<IReadOnlyCollection<ServiceOffering>> ListByIdsAsync(IEnumerable<Guid> serviceOfferingIds, CancellationToken cancellationToken = default) => Task.FromResult(ServicesByIds);
         public Task<IReadOnlyCollection<ServiceOffering>> ListByBarbershopAsync(Guid barbershopId, CancellationToken cancellationToken = default) => Task.FromResult(ServicesByIds.Where(x => x.BarbershopId == barbershopId).ToArray() as IReadOnlyCollection<ServiceOffering>);
+    }
+
+    private sealed class FakeReviewRepository : IReviewRepository
+    {
+        public Review? ReviewByAppointmentId { get; set; }
+        public List<Review> AddedReviews { get; } = [];
+        public IReadOnlyCollection<Review> ReviewsByAppointmentIds { get; set; } = Array.Empty<Review>();
+        public double? AverageStarsByBarbershop { get; set; }
+
+        public Task<Review?> GetByAppointmentIdAsync(Guid appointmentId, CancellationToken cancellationToken = default)
+            => Task.FromResult(ReviewByAppointmentId);
+
+        public Task<IReadOnlyCollection<Review>> ListByAppointmentIdsAsync(IEnumerable<Guid> appointmentIds, CancellationToken cancellationToken = default)
+            => Task.FromResult(ReviewsByAppointmentIds);
+
+        public Task<double?> GetAverageStarsByBarbershopAsync(Guid barbershopId, CancellationToken cancellationToken = default)
+            => Task.FromResult(AverageStarsByBarbershop);
+
+        public Task<ValidationResult> AddAsync(Review review, CancellationToken cancellationToken = default)
+        {
+            AddedReviews.Add(review);
+            return Task.FromResult(new ValidationResult());
+        }
     }
 
     private sealed class FakeUserRepository : IUserRepository

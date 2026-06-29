@@ -79,7 +79,6 @@ class _PrestadorFlowPageState extends State<PrestadorFlowPage> {
   final Set<String> _updatingAppointmentIds = <String>{};
   Timer? _appointmentsPollingTimer;
   Set<String> _knownInAnalysisAppointmentIds = <String>{};
-  int _newInAnalysisCount = 0;
 
   void _syncBarbershopControllers(BarbershopDraft? barbershop) {
     _shopNameController.text = barbershop?.name ?? '';
@@ -153,9 +152,9 @@ class _PrestadorFlowPageState extends State<PrestadorFlowPage> {
 
       _session = session;
       await _loadMyBarbershopOrRedirect();
-      _showMessage('Login realizado com sucesso.');
+      _showMessage('Login realizado com sucesso.', type: TopNoticeType.success);
     } catch (error) {
-      _showMessage(error.toString());
+      _showMessage(error.toString(), type: TopNoticeType.error);
     } finally {
       if (mounted) {
         setState(() => _isBusy = false);
@@ -189,9 +188,12 @@ class _PrestadorFlowPageState extends State<PrestadorFlowPage> {
         _step = FlowStep.barbershopForm;
       });
       _startAppointmentsPolling();
-      _showMessage('Cadastro realizado. Agora preencha os dados da barbearia.');
+      _showMessage(
+        'Cadastro realizado. Agora preencha os dados da barbearia.',
+        type: TopNoticeType.success,
+      );
     } catch (error) {
-      _showMessage(error.toString());
+      _showMessage(error.toString(), type: TopNoticeType.error);
     } finally {
       if (mounted) {
         setState(() => _isBusy = false);
@@ -202,7 +204,7 @@ class _PrestadorFlowPageState extends State<PrestadorFlowPage> {
   Future<void> _saveBarbershop() async {
     final session = _session;
     if (session == null) {
-      _showMessage('Sessao nao encontrada.');
+      _showMessage('Sessao nao encontrada.', type: TopNoticeType.error);
       return;
     }
 
@@ -241,9 +243,9 @@ class _PrestadorFlowPageState extends State<PrestadorFlowPage> {
 
       await _loadDashboardData();
       _startAppointmentsPolling();
-      _showMessage('Barbearia salva com sucesso.');
+      _showMessage('Barbearia salva com sucesso.', type: TopNoticeType.success);
     } catch (error) {
-      _showMessage(error.toString());
+      _showMessage(error.toString(), type: TopNoticeType.error);
     } finally {
       if (mounted) {
         setState(() => _isBusy = false);
@@ -372,7 +374,6 @@ class _PrestadorFlowPageState extends State<PrestadorFlowPage> {
     if (_knownInAnalysisAppointmentIds.isNotEmpty) {
       final newIds = currentIds.difference(_knownInAnalysisAppointmentIds);
       if (newIds.isNotEmpty) {
-        _newInAnalysisCount += newIds.length;
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) {
             return;
@@ -382,6 +383,7 @@ class _PrestadorFlowPageState extends State<PrestadorFlowPage> {
             newIds.length == 1
                 ? 'Chegou 1 novo agendamento em analise.'
                 : 'Chegaram ${newIds.length} novos agendamentos em analise.',
+            type: TopNoticeType.info,
           );
         });
       }
@@ -443,7 +445,10 @@ class _PrestadorFlowPageState extends State<PrestadorFlowPage> {
     final session = _session;
     final barbershop = _barbershop;
     if (session == null || barbershop == null) {
-      _showMessage('Barbearia ou sessao nao encontrada.');
+      _showMessage(
+        'Barbearia ou sessao nao encontrada.',
+        type: TopNoticeType.error,
+      );
       return;
     }
 
@@ -453,12 +458,18 @@ class _PrestadorFlowPageState extends State<PrestadorFlowPage> {
     );
 
     if (price == null) {
-      _showMessage('Informe um preco valido. Ex.: 35 ou 35,90');
+      _showMessage(
+        'Informe um preco valido. Ex.: 35 ou 35,90',
+        type: TopNoticeType.error,
+      );
       return;
     }
 
     if (durationMinutes == null || durationMinutes <= 0) {
-      _showMessage('Informe uma duracao valida em minutos.');
+      _showMessage(
+        'Informe uma duracao valida em minutos.',
+        type: TopNoticeType.error,
+      );
       return;
     }
 
@@ -493,10 +504,13 @@ class _PrestadorFlowPageState extends State<PrestadorFlowPage> {
         return;
       }
 
-      _showMessage('Servico cadastrado com sucesso.');
+      _showMessage(
+        'Servico cadastrado com sucesso.',
+        type: TopNoticeType.success,
+      );
       await _loadServices();
     } catch (error) {
-      _showMessage(error.toString());
+      _showMessage(error.toString(), type: TopNoticeType.error);
     } finally {
       if (mounted) {
         setState(() => _isServiceSubmitting = false);
@@ -533,15 +547,18 @@ class _PrestadorFlowPageState extends State<PrestadorFlowPage> {
         return;
       }
 
-      _showMessage(
-        status == BarberAppointmentStatusUpdate.accepted
-            ? 'Pedido aceito com sucesso.'
-            : 'Pedido recusado com sucesso.',
-      );
-      _newInAnalysisCount = 0;
+      _showMessage(switch (status) {
+        BarberAppointmentStatusUpdate.accepted => 'Pedido aceito com sucesso.',
+        BarberAppointmentStatusUpdate.rejected =>
+          'Pedido recusado com sucesso.',
+        BarberAppointmentStatusUpdate.completed =>
+          'Pedido concluido com sucesso.',
+        BarberAppointmentStatusUpdate.cancelled =>
+          'Pedido cancelado com sucesso.',
+      }, type: TopNoticeType.success);
       await _loadAppointments();
     } catch (error) {
-      _showMessage(error.toString());
+      _showMessage(error.toString(), type: TopNoticeType.error);
     } finally {
       if (mounted) {
         setState(() => _updatingAppointmentIds.remove(appointment.id));
@@ -563,9 +580,162 @@ class _PrestadorFlowPageState extends State<PrestadorFlowPage> {
       _statusFilter = null;
       _updatingAppointmentIds.clear();
       _knownInAnalysisAppointmentIds = <String>{};
-      _newInAnalysisCount = 0;
     });
     _syncBarbershopControllers(null);
+  }
+
+  Future<void> _openAppointmentDetails(BarberAppointment appointment) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        final theme = Theme.of(sheetContext);
+
+        return StatefulBuilder(
+          builder: (sheetContext, setSheetState) {
+            final isUpdating = _updatingAppointmentIds.contains(appointment.id);
+            final canComplete =
+                appointment.status == 'Accepted' ||
+                appointment.status == 'InProgress';
+            final canCancel =
+                appointment.status != 'Completed' &&
+                appointment.status != 'Cancelled' &&
+                appointment.status != 'Rejected';
+
+            Future<void> changeStatus(
+              BarberAppointmentStatusUpdate status,
+            ) async {
+              setSheetState(() {});
+              await _updateAppointmentStatus(appointment, status);
+              if (sheetContext.mounted) {
+                Navigator.of(sheetContext).pop();
+              }
+            }
+
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                child: Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(28),
+                      bottom: Radius.circular(28),
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Center(
+                        child: Container(
+                          width: 48,
+                          height: 5,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFD8DCDD),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        'Detalhes do agendamento',
+                        style: theme.textTheme.titleLarge,
+                      ),
+                      const SizedBox(height: 16),
+                      _DetailRow(
+                        label: 'Cliente',
+                        value: appointment.clientName.isEmpty
+                            ? appointment.clientId
+                            : appointment.clientName,
+                      ),
+                      _DetailRow(
+                        label: 'Barbearia',
+                        value: appointment.barbershopName.isEmpty
+                            ? appointment.barbershopId
+                            : appointment.barbershopName,
+                      ),
+                      _DetailRow(
+                        label: 'Data e horario',
+                        value: _dateLabel(appointment.scheduledAtUtc),
+                      ),
+                      _DetailRow(
+                        label: 'Status atual',
+                        value: _statusLabel(appointment.status),
+                      ),
+                      _DetailRow(
+                        label: 'Valor total',
+                        value: _currency.format(appointment.totalPrice),
+                      ),
+                      if (appointment.selectedServices.isNotEmpty) ...[
+                        Text('Servicos', style: theme.textTheme.labelMedium),
+                        const SizedBox(height: 8),
+                        for (final service in appointment.selectedServices)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: Text(
+                              '${service.name} • ${service.durationMinutes} min • ${_currency.format(service.price)}',
+                              style: theme.textTheme.bodyMedium,
+                            ),
+                          ),
+                        const SizedBox(height: 12),
+                      ],
+                      if (canComplete) ...[
+                        SizedBox(
+                          width: double.infinity,
+                          child: FilledButton(
+                            onPressed: isUpdating
+                                ? null
+                                : () => changeStatus(
+                                    BarberAppointmentStatusUpdate.completed,
+                                  ),
+                            child: isUpdating
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Text('Marcar como concluido'),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                      if (canCancel) ...[
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton(
+                            onPressed: isUpdating
+                                ? null
+                                : () => changeStatus(
+                                    BarberAppointmentStatusUpdate.cancelled,
+                                  ),
+                            child: const Text('Cancelar agendamento'),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                      SizedBox(
+                        width: double.infinity,
+                        child: TextButton(
+                          onPressed: isUpdating
+                              ? null
+                              : () => Navigator.of(sheetContext).pop(),
+                          child: const Text('Fechar'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   PrestadorSession _parseSession(http.Response response) {
@@ -676,10 +846,8 @@ class _PrestadorFlowPageState extends State<PrestadorFlowPage> {
     ).format(dateTime.toLocal());
   }
 
-  void _showMessage(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+  void _showMessage(String message, {TopNoticeType type = TopNoticeType.info}) {
+    showTopNotice(context, message: message, type: type);
   }
 
   @override
@@ -898,31 +1066,6 @@ class _PrestadorFlowPageState extends State<PrestadorFlowPage> {
             subtitle:
                 'Veja os pedidos recebidos, filtre por status e responda quando quiser.',
           ),
-          if (_newInAnalysisCount > 0) ...[
-            const SizedBox(height: 16),
-            _SectionCard(
-              child: Row(
-                children: [
-                  const Icon(Icons.notifications_active_outlined),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      _newInAnalysisCount == 1
-                          ? 'Voce tem 1 novo agendamento em analise.'
-                          : 'Voce tem $_newInAnalysisCount novos agendamentos em analise.',
-                      style: theme.textTheme.bodyLarge,
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      setState(() => _newInAnalysisCount = 0);
-                    },
-                    child: const Text('Dispensar'),
-                  ),
-                ],
-              ),
-            ),
-          ],
           const SizedBox(height: 24),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
@@ -986,96 +1129,114 @@ class _PrestadorFlowPageState extends State<PrestadorFlowPage> {
               Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: _SectionCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(24),
+                    onTap: () => _openAppointmentDetails(appointment),
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                            child: Text(
-                              _dateLabel(appointment.scheduledAtUtc),
-                              style: theme.textTheme.titleMedium,
-                            ),
-                          ),
-                          _StatusPill(
-                            label: _statusLabel(appointment.status),
-                            background: _statusBackground(appointment.status),
-                            foreground: _statusForeground(appointment.status),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      Text(
-                        'Valor do pedido: ${_currency.format(appointment.totalPrice)}',
-                        style: theme.textTheme.bodyLarge,
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'Cliente: ${appointment.clientName}',
-                        style: theme.textTheme.bodySmall,
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'Barbearia: ${appointment.barbershopName}',
-                        style: theme.textTheme.bodySmall,
-                      ),
-                      if (appointment.selectedServices.isNotEmpty) ...[
-                        const SizedBox(height: 6),
-                        Text(
-                          'Servicos: ${appointment.selectedServices.map((service) => service.name).join(', ')}',
-                          style: theme.textTheme.bodySmall,
-                        ),
-                      ],
-                      if (appointment.status == 'Pending' ||
-                          appointment.status == 'InProgress') ...[
-                        const SizedBox(height: 16),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: FilledButton(
-                                onPressed:
-                                    _updatingAppointmentIds.contains(
-                                      appointment.id,
-                                    )
-                                    ? null
-                                    : () => _updateAppointmentStatus(
-                                        appointment,
-                                        BarberAppointmentStatusUpdate.accepted,
-                                      ),
-                                child:
-                                    _updatingAppointmentIds.contains(
-                                      appointment.id,
-                                    )
-                                    ? const SizedBox(
-                                        width: 18,
-                                        height: 18,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                        ),
-                                      )
-                                    : const Text('Aceitar'),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  _dateLabel(appointment.scheduledAtUtc),
+                                  style: theme.textTheme.titleMedium,
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: OutlinedButton(
-                                onPressed:
-                                    _updatingAppointmentIds.contains(
-                                      appointment.id,
-                                    )
-                                    ? null
-                                    : () => _updateAppointmentStatus(
-                                        appointment,
-                                        BarberAppointmentStatusUpdate.rejected,
-                                      ),
-                                child: const Text('Recusar'),
+                              _StatusPill(
+                                label: _statusLabel(appointment.status),
+                                background: _statusBackground(
+                                  appointment.status,
+                                ),
+                                foreground: _statusForeground(
+                                  appointment.status,
+                                ),
                               ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            'Valor do pedido: ${_currency.format(appointment.totalPrice)}',
+                            style: theme.textTheme.bodyLarge,
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Cliente: ${appointment.clientName}',
+                            style: theme.textTheme.bodySmall,
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Barbearia: ${appointment.barbershopName}',
+                            style: theme.textTheme.bodySmall,
+                          ),
+                          if (appointment.selectedServices.isNotEmpty) ...[
+                            const SizedBox(height: 6),
+                            Text(
+                              'Servicos: ${appointment.selectedServices.map((service) => service.name).join(', ')}',
+                              style: theme.textTheme.bodySmall,
                             ),
                           ],
-                        ),
-                      ],
-                    ],
+                          const SizedBox(height: 6),
+                          Text(
+                            'Toque para abrir o pedido',
+                            style: theme.textTheme.bodySmall,
+                          ),
+                          if (appointment.status == 'Pending' ||
+                              appointment.status == 'InProgress') ...[
+                            const SizedBox(height: 16),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: FilledButton(
+                                    onPressed:
+                                        _updatingAppointmentIds.contains(
+                                          appointment.id,
+                                        )
+                                        ? null
+                                        : () => _updateAppointmentStatus(
+                                            appointment,
+                                            BarberAppointmentStatusUpdate
+                                                .accepted,
+                                          ),
+                                    child:
+                                        _updatingAppointmentIds.contains(
+                                          appointment.id,
+                                        )
+                                        ? const SizedBox(
+                                            width: 18,
+                                            height: 18,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                            ),
+                                          )
+                                        : const Text('Aceitar'),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: OutlinedButton(
+                                    onPressed:
+                                        _updatingAppointmentIds.contains(
+                                          appointment.id,
+                                        )
+                                        ? null
+                                        : () => _updateAppointmentStatus(
+                                            appointment,
+                                            BarberAppointmentStatusUpdate
+                                                .rejected,
+                                          ),
+                                    child: const Text('Recusar'),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -1358,9 +1519,14 @@ class BarberAppointment {
       scheduledAtUtc: DateTime.parse(json['scheduledAtUtc'] as String),
       totalPrice: (json['totalPrice'] as num).toDouble(),
       status: json['status'] as String,
-      selectedServices: ((json['selectedServices'] as List<dynamic>?) ?? const [])
-          .map((item) => AppointmentSelectedService.fromJson(item as Map<String, dynamic>))
-          .toList(),
+      selectedServices:
+          ((json['selectedServices'] as List<dynamic>?) ?? const [])
+              .map(
+                (item) => AppointmentSelectedService.fromJson(
+                  item as Map<String, dynamic>,
+                ),
+              )
+              .toList(),
     );
   }
 
@@ -1444,7 +1610,9 @@ enum BarberAppointmentStatusFilter {
 
 enum BarberAppointmentStatusUpdate {
   accepted(1),
-  rejected(2);
+  rejected(2),
+  completed(4),
+  cancelled(5);
 
   const BarberAppointmentStatusUpdate(this.apiValue);
 
@@ -1561,6 +1729,30 @@ class _StatusPill extends StatelessWidget {
           color: foreground,
           fontWeight: FontWeight.w700,
         ),
+      ),
+    );
+  }
+}
+
+class _DetailRow extends StatelessWidget {
+  const _DetailRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: theme.textTheme.labelMedium),
+          const SizedBox(height: 4),
+          Text(value, style: theme.textTheme.bodyLarge),
+        ],
       ),
     );
   }

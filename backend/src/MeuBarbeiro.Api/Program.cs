@@ -89,6 +89,7 @@ builder.Services.AddScoped<IAppointmentServiceSelectionRepository, SqliteAppoint
 builder.Services.AddScoped<IBarberRepository, SqliteBarberRepository>();
 builder.Services.AddScoped<IBarbershopRepository, SqliteBarbershopRepository>();
 builder.Services.AddScoped<IClientRepository, SqliteClientRepository>();
+builder.Services.AddScoped<IReviewRepository, SqliteReviewRepository>();
 builder.Services.AddScoped<IServiceOfferingRepository, SqliteServiceOfferingRepository>();
 builder.Services.AddScoped<IUserRepository, SqliteUserRepository>();
 builder.Services.AddScoped<IPasswordHasherService, PasswordHasherService>();

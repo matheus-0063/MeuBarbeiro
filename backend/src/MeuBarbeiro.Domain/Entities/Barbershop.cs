@@ -16,4 +16,9 @@ public sealed class Barbershop
         Address = address;
         Description = description;
     }
+
+    public void UpdateAverageRating(double averageRating)
+    {
+        AverageRating = averageRating;
+    }
 }

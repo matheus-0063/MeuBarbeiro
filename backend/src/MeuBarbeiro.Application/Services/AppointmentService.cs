@@ -17,6 +17,7 @@ public class AppointmentService(
     IBarberRepository barberRepository,
     IBarbershopRepository barbershopRepository,
     IClientRepository clientRepository,
+    IReviewRepository reviewRepository,
     IServiceOfferingRepository serviceOfferingRepository,
     IUserRepository userRepository,
     IEventPublisher eventPublisher) : IAppointmentService
@@ -78,6 +79,80 @@ public class AppointmentService(
             appointment.TotalPrice));
 
         return ServiceResult<Guid>.Success(appointment.Id);
+    }
+
+    public async Task<ServiceResult<AppointmentReviewResponseDto>> CreateReview(
+        Guid appointmentId,
+        Guid clientId,
+        CreateAppointmentReviewRequestDto request,
+        CancellationToken cancellationToken = default)
+    {
+        var appointment = await appointmentRepository.GetByIdAsync(appointmentId, cancellationToken);
+        if (appointment == null)
+        {
+            return ServiceResult<AppointmentReviewResponseDto>.NotFound();
+        }
+
+        if (appointment.ClientId != clientId)
+        {
+            var validationResult = new ValidationResult();
+            validationResult.Errors.Add(new ValidationFailure(nameof(clientId), "O agendamento nao pertence ao cliente autenticado."));
+            return ServiceResult<AppointmentReviewResponseDto>.Failure(validationResult);
+        }
+
+        if (appointment.Status != AppointmentStatus.Completed)
+        {
+            var validationResult = new ValidationResult();
+            validationResult.Errors.Add(new ValidationFailure(nameof(appointment.Status), "Somente agendamentos concluidos podem ser avaliados."));
+            return ServiceResult<AppointmentReviewResponseDto>.Failure(validationResult);
+        }
+
+        if (request.Stars < 1 || request.Stars > 5)
+        {
+            var validationResult = new ValidationResult();
+            validationResult.Errors.Add(new ValidationFailure(nameof(request.Stars), "A avaliacao deve conter entre 1 e 5 estrelas."));
+            return ServiceResult<AppointmentReviewResponseDto>.Failure(validationResult);
+        }
+
+        var existingReview = await reviewRepository.GetByAppointmentIdAsync(appointmentId, cancellationToken);
+        if (existingReview != null)
+        {
+            var validationResult = new ValidationResult();
+            validationResult.Errors.Add(new ValidationFailure(nameof(appointmentId), "Este agendamento ja foi avaliado."));
+            return ServiceResult<AppointmentReviewResponseDto>.Failure(validationResult);
+        }
+
+        var review = new Review
+        {
+            AppointmentId = appointment.Id,
+            ClientId = appointment.ClientId,
+            BarberId = appointment.BarberId,
+            BarbershopId = appointment.BarbershopId,
+            Stars = request.Stars,
+            CreatedAtUtc = DateTime.UtcNow
+        };
+
+        var addValidationResult = await reviewRepository.AddAsync(review, cancellationToken);
+        if (!addValidationResult.IsValid)
+        {
+            return ServiceResult<AppointmentReviewResponseDto>.Failure(addValidationResult);
+        }
+
+        var barbershop = await barbershopRepository.GetByIdAsync(appointment.BarbershopId, cancellationToken);
+        if (barbershop != null)
+        {
+            var averageStars = await reviewRepository.GetAverageStarsByBarbershopAsync(appointment.BarbershopId, cancellationToken);
+            barbershop.UpdateAverageRating(averageStars ?? request.Stars);
+            await barbershopRepository.UpdateAsync(barbershop, cancellationToken);
+        }
+
+        return ServiceResult<AppointmentReviewResponseDto>.Success(new AppointmentReviewResponseDto
+        {
+            Id = review.Id,
+            AppointmentId = review.AppointmentId,
+            Stars = review.Stars,
+            CreatedAtUtc = review.CreatedAtUtc
+        });
     }
 
     public async Task<ServiceResult<AppointmentResponseDto>> GetAppointment(Guid id)
@@ -161,12 +236,14 @@ public class AppointmentService(
         var clients = await clientRepository.ListByIdsAsync(appointmentList.Select(appointment => appointment.ClientId), cancellationToken);
         var users = await userRepository.ListByIdsAsync(clients.Select(client => client.UserId), cancellationToken);
         var barbershops = await barbershopRepository.ListByIdsAsync(appointmentList.Select(appointment => appointment.BarbershopId), cancellationToken);
+        var reviews = await reviewRepository.ListByAppointmentIdsAsync(appointmentList.Select(appointment => appointment.Id), cancellationToken);
         var selections = await appointmentServiceSelectionRepository.ListByAppointmentIdsAsync(appointmentList.Select(appointment => appointment.Id), cancellationToken);
         var services = await serviceOfferingRepository.ListByIdsAsync(selections.Select(selection => selection.ServiceOfferingId), cancellationToken);
 
         var clientsById = clients.ToDictionary(client => client.Id);
         var usersById = users.ToDictionary(user => user.Id);
         var barbershopsById = barbershops.ToDictionary(barbershop => barbershop.Id);
+        var reviewsByAppointmentId = reviews.ToDictionary(review => review.AppointmentId);
         var servicesById = services.ToDictionary(service => service.Id);
         var selectionsByAppointmentId = selections
             .GroupBy(selection => selection.AppointmentId)
@@ -185,6 +262,12 @@ public class AppointmentService(
             if (barbershopsById.TryGetValue(appointment.BarbershopId, out var barbershop))
             {
                 dto.BarbershopName = barbershop.Name;
+            }
+
+            if (reviewsByAppointmentId.TryGetValue(appointment.Id, out var review))
+            {
+                dto.HasReview = true;
+                dto.ReviewStars = review.Stars;
             }
 
             if (selectionsByAppointmentId.TryGetValue(appointment.Id, out var appointmentSelections))

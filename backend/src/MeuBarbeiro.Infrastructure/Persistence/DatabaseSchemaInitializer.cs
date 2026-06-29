@@ -65,6 +65,17 @@ public sealed class DatabaseSchemaInitializer
             "ServiceOfferingId" TEXT NOT NULL
         );
         """;
+    private const string CreateReviewsTableSql = """
+        CREATE TABLE IF NOT EXISTS "Reviews" (
+            "Id" TEXT NOT NULL CONSTRAINT "PK_Reviews" PRIMARY KEY,
+            "AppointmentId" TEXT NOT NULL,
+            "ClientId" TEXT NOT NULL,
+            "BarberId" TEXT NOT NULL,
+            "BarbershopId" TEXT NOT NULL,
+            "Stars" INTEGER NOT NULL,
+            "CreatedAtUtc" TEXT NOT NULL
+        );
+        """;
 
     public async Task EnsureSchemaAsync(AppDbContext dbContext, CancellationToken cancellationToken = default)
     {
@@ -79,5 +90,7 @@ public sealed class DatabaseSchemaInitializer
         await dbContext.Database.ExecuteSqlRawAsync(CreateEventProcessingAuditsTableSql, cancellationToken);
         await dbContext.Database.ExecuteSqlRawAsync(CreateServiceOfferingsTableSql, cancellationToken);
         await dbContext.Database.ExecuteSqlRawAsync(CreateAppointmentServiceSelectionsTableSql, cancellationToken);
+        await dbContext.Database.ExecuteSqlRawAsync(CreateReviewsTableSql, cancellationToken);
+        await dbContext.Database.ExecuteSqlRawAsync("""CREATE UNIQUE INDEX IF NOT EXISTS "IX_Reviews_AppointmentId" ON "Reviews" ("AppointmentId");""", cancellationToken);
     }
 }

@@ -136,6 +136,46 @@ public class AppointmentController(
             : Ok(dataValidationResult.Data);
     }
 
+    [Authorize(Roles = "Client")]
+    [HttpPost("{appointmentId:guid}/review")]
+    [ProducesResponseType<AppointmentReviewResponseDto>(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> CreateReview(
+        Guid appointmentId,
+        [FromBody] CreateAppointmentReviewRequestDto request,
+        CancellationToken cancellationToken)
+    {
+        if (!TryGetAuthenticatedUserId(out var userId))
+        {
+            return Unauthorized();
+        }
+
+        var client = await clientRepository.GetByUserIdAsync(userId, cancellationToken);
+        if (client is null)
+        {
+            return NotFound(new ProblemDetails
+            {
+                Title = "Perfil de cliente não encontrado."
+            });
+        }
+
+        var result = await appointmentService.CreateReview(appointmentId, client.Id, request, cancellationToken);
+
+        if (result.IsNotFound)
+        {
+            return NotFound();
+        }
+
+        if (ResponseHasErros(result.ValidationResult))
+        {
+            return ValidationProblem();
+        }
+
+        return CreatedAtAction(nameof(GetAppointment), new { version = "1.0", appointmentId }, result.Data);
+    }
+
     [Authorize(Roles = "Barber")]
     [HttpPatch("{appointmentId:guid}/status")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]

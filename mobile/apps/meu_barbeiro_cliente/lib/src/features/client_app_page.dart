@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:meu_barbeiro_core/meu_barbeiro_core.dart';
 
 import '../data/backend_api.dart';
 import '../data/local_store.dart';
@@ -36,7 +39,9 @@ class _ClientAppPageState extends State<ClientAppPage> {
   List<BarbershopSummary> _barbershops = const [];
   List<ClientAppointment> _appointments = const [];
   final Map<String, BarbershopSummary> _barbershopCache = {};
+  final Map<String, String> _appointmentStatusById = {};
   AppointmentStatusFilter? _statusFilter;
+  Timer? _appointmentsPollingTimer;
 
   @override
   void initState() {
@@ -70,6 +75,7 @@ class _ClientAppPageState extends State<ClientAppPage> {
 
   @override
   void dispose() {
+    _appointmentsPollingTimer?.cancel();
     _loginEmailController.dispose();
     _loginPasswordController.dispose();
     _registerNameController.dispose();
@@ -93,6 +99,7 @@ class _ClientAppPageState extends State<ClientAppPage> {
 
     if (storedSession != null && storedSession.role == 'Client') {
       await _loadInitialClientData();
+      _startAppointmentsPolling();
     }
   }
 
@@ -113,9 +120,11 @@ class _ClientAppPageState extends State<ClientAppPage> {
     });
 
     await _loadInitialClientData();
+    _startAppointmentsPolling();
   }
 
   Future<void> _logout() async {
+    _appointmentsPollingTimer?.cancel();
     await _localStore.clearSession();
     if (!mounted) {
       return;
@@ -125,6 +134,7 @@ class _ClientAppPageState extends State<ClientAppPage> {
       _session = null;
       _appointments = const [];
       _barbershops = const [];
+      _appointmentStatusById.clear();
     });
   }
 
@@ -145,9 +155,9 @@ class _ClientAppPageState extends State<ClientAppPage> {
       }
 
       await _setSession(session);
-      _showMessage('Login realizado com sucesso.');
+      _showMessage('Login realizado com sucesso.', type: TopNoticeType.success);
     } catch (error) {
-      _showMessage(error.toString());
+      _showMessage(error.toString(), type: TopNoticeType.error);
     } finally {
       if (mounted) {
         setState(() => _isAuthBusy = false);
@@ -167,9 +177,12 @@ class _ClientAppPageState extends State<ClientAppPage> {
       );
 
       await _setSession(session);
-      _showMessage('Cadastro realizado com sucesso.');
+      _showMessage(
+        'Cadastro realizado com sucesso.',
+        type: TopNoticeType.success,
+      );
     } catch (error) {
-      _showMessage(error.toString());
+      _showMessage(error.toString(), type: TopNoticeType.error);
     } finally {
       if (mounted) {
         setState(() => _isAuthBusy = false);
@@ -213,22 +226,13 @@ class _ClientAppPageState extends State<ClientAppPage> {
   }
 
   Future<void> _loadAppointments() async {
-    final session = _session;
-    if (session == null) {
-      return;
-    }
-
     setState(() {
       _isAppointmentsLoading = true;
       _appointmentsError = null;
     });
 
     try {
-      final appointments = await _api.getMyAppointments(
-        baseUrl: _apiBaseUrl,
-        accessToken: session.accessToken,
-        status: _statusFilter,
-      );
+      final appointments = await _fetchAppointments(status: _statusFilter);
 
       if (!mounted) {
         return;
@@ -239,31 +243,8 @@ class _ClientAppPageState extends State<ClientAppPage> {
         _isAppointmentsLoading = false;
       });
 
-      for (final appointment in appointments) {
-        if (appointment.barbershopName.isNotEmpty &&
-            !_barbershopCache.containsKey(appointment.barbershopId)) {
-          _barbershopCache[appointment.barbershopId] = BarbershopSummary(
-            id: appointment.barbershopId,
-            name: appointment.barbershopName,
-            city: '',
-            address: '',
-            description: '',
-            averageRating: 0,
-          );
-        }
-
-        if (!_barbershopCache.containsKey(appointment.barbershopId)) {
-          try {
-            final shop = await _api.getBarbershop(
-              baseUrl: _apiBaseUrl,
-              barbershopId: appointment.barbershopId,
-            );
-            _barbershopCache[shop.id] = shop;
-          } catch (_) {
-            // Mantem fallback visual com o id se a API falhar.
-          }
-        }
-      }
+      await _hydrateBarbershopCache(appointments);
+      _seedAppointmentStatuses(appointments);
 
       if (mounted) {
         setState(() {});
@@ -278,6 +259,122 @@ class _ClientAppPageState extends State<ClientAppPage> {
         _isAppointmentsLoading = false;
       });
     }
+  }
+
+  Future<List<ClientAppointment>> _fetchAppointments({
+    AppointmentStatusFilter? status,
+  }) async {
+    final session = _session;
+    if (session == null) {
+      return const [];
+    }
+
+    return _api.getMyAppointments(
+      baseUrl: _apiBaseUrl,
+      accessToken: session.accessToken,
+      status: status,
+    );
+  }
+
+  Future<void> _hydrateBarbershopCache(
+    List<ClientAppointment> appointments,
+  ) async {
+    for (final appointment in appointments) {
+      if (appointment.barbershopName.isNotEmpty &&
+          !_barbershopCache.containsKey(appointment.barbershopId)) {
+        _barbershopCache[appointment.barbershopId] = BarbershopSummary(
+          id: appointment.barbershopId,
+          name: appointment.barbershopName,
+          city: '',
+          address: '',
+          description: '',
+          averageRating: 0,
+        );
+      }
+
+      if (!_barbershopCache.containsKey(appointment.barbershopId)) {
+        try {
+          final shop = await _api.getBarbershop(
+            baseUrl: _apiBaseUrl,
+            barbershopId: appointment.barbershopId,
+          );
+          _barbershopCache[shop.id] = shop;
+        } catch (_) {
+          // Mantem fallback visual com o id se a API falhar.
+        }
+      }
+    }
+  }
+
+  void _seedAppointmentStatuses(List<ClientAppointment> appointments) {
+    for (final appointment in appointments) {
+      _appointmentStatusById.putIfAbsent(
+        appointment.id,
+        () => appointment.status,
+      );
+    }
+  }
+
+  void _startAppointmentsPolling() {
+    _appointmentsPollingTimer?.cancel();
+    _appointmentsPollingTimer = Timer.periodic(const Duration(seconds: 8), (_) {
+      if (_session != null && mounted) {
+        _pollAppointmentStatusChanges();
+      }
+    });
+  }
+
+  Future<void> _pollAppointmentStatusChanges() async {
+    try {
+      final allAppointments = await _fetchAppointments();
+      if (!mounted) {
+        return;
+      }
+
+      await _hydrateBarbershopCache(allAppointments);
+
+      final changedAppointments = <ClientAppointment>[];
+
+      for (final appointment in allAppointments) {
+        final previousStatus = _appointmentStatusById[appointment.id];
+        if (previousStatus != null && previousStatus != appointment.status) {
+          changedAppointments.add(appointment);
+        }
+
+        _appointmentStatusById[appointment.id] = appointment.status;
+      }
+
+      if (changedAppointments.isNotEmpty) {
+        setState(() {
+          _appointments = _applyStatusFilter(allAppointments, _statusFilter);
+        });
+
+        final message = changedAppointments.length == 1
+            ? 'Seu agendamento em ${changedAppointments.first.barbershopName.isNotEmpty ? changedAppointments.first.barbershopName : 'uma barbearia'} mudou para ${_statusLabel(changedAppointments.first.status)}.'
+            : '${changedAppointments.length} agendamentos tiveram atualizacao de status.';
+
+        _showMessage(message, type: TopNoticeType.info);
+      } else if (mounted) {
+        setState(() {
+          _appointments = _applyStatusFilter(allAppointments, _statusFilter);
+        });
+      }
+    } catch (_) {
+      // Evita interromper a experiencia do cliente por falha de polling.
+    }
+  }
+
+  List<ClientAppointment> _applyStatusFilter(
+    List<ClientAppointment> appointments,
+    AppointmentStatusFilter? status,
+  ) {
+    if (status == null) {
+      return appointments;
+    }
+
+    return appointments
+        .where((appointment) => appointment.status == status.apiValue)
+        .toList();
   }
 
   String _statusLabel(String status) {
@@ -338,10 +435,87 @@ class _ClientAppPageState extends State<ClientAppPage> {
     ).format(dateTime.toLocal());
   }
 
-  void _showMessage(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+  void _showMessage(String message, {TopNoticeType type = TopNoticeType.info}) {
+    showTopNotice(context, message: message, type: type);
+  }
+
+  Future<void> _openReviewDialog(ClientAppointment appointment) async {
+    final session = _session;
+    if (session == null) {
+      return;
+    }
+
+    var selectedStars = 5;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return AlertDialog(
+              title: const Text('Avaliar atendimento'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'Escolha de 1 a 5 estrelas para avaliar o servico.',
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(5, (index) {
+                      final starValue = index + 1;
+                      return IconButton(
+                        onPressed: () {
+                          setModalState(() => selectedStars = starValue);
+                        },
+                        icon: Icon(
+                          Icons.star,
+                          color: starValue <= selectedStars
+                              ? const Color(0xFFF2B94B)
+                              : const Color(0xFFD4D6D8),
+                        ),
+                      );
+                    }),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: const Text('Cancelar'),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  child: const Text('Enviar'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (confirmed != true || !mounted) {
+      return;
+    }
+
+    try {
+      await _api.createAppointmentReview(
+        baseUrl: _apiBaseUrl,
+        accessToken: session.accessToken,
+        appointmentId: appointment.id,
+        stars: selectedStars,
+      );
+
+      _showMessage(
+        'Avaliacao enviada com sucesso.',
+        type: TopNoticeType.success,
+      );
+      await _loadAppointments();
+    } catch (error) {
+      _showMessage(error.toString(), type: TopNoticeType.error);
+    }
   }
 
   Future<void> _openBookingScreen(BarbershopSummary shop) async {
@@ -605,8 +779,8 @@ class _ClientAppPageState extends State<ClientAppPage> {
                               appointment.barbershopName.isNotEmpty
                                   ? appointment.barbershopName
                                   : _barbershopCache[appointment.barbershopId]
-                                        ?.name ??
-                                  'Barbearia ${appointment.barbershopId.substring(0, 8)}',
+                                            ?.name ??
+                                        'Barbearia ${appointment.barbershopId.substring(0, 8)}',
                               style: theme.textTheme.titleMedium,
                             ),
                           ),
@@ -651,6 +825,35 @@ class _ClientAppPageState extends State<ClientAppPage> {
                         ).format(appointment.totalPrice),
                         style: theme.textTheme.labelLarge,
                       ),
+                      if (appointment.status == 'Completed' &&
+                          !appointment.hasReview) ...[
+                        const SizedBox(height: 12),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: OutlinedButton.icon(
+                            onPressed: () => _openReviewDialog(appointment),
+                            icon: const Icon(Icons.star_outline),
+                            label: const Text('Avaliar atendimento'),
+                          ),
+                        ),
+                      ] else if (appointment.hasReview &&
+                          appointment.reviewStars != null) ...[
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.star,
+                              color: Color(0xFFF2B94B),
+                              size: 18,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Sua avaliacao: ${appointment.reviewStars} estrelas',
+                              style: theme.textTheme.bodyMedium,
+                            ),
+                          ],
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -1117,10 +1320,11 @@ class _BarbershopBookingPageState extends State<BarbershopBookingPage> {
 
       _showMessage(
         'Agendamento criado com sucesso. Codigo: ${appointmentId.substring(0, 8)}',
+        type: TopNoticeType.success,
       );
       Navigator.of(context).pop(true);
     } catch (error) {
-      _showMessage(error.toString());
+      _showMessage(error.toString(), type: TopNoticeType.error);
     } finally {
       if (mounted) {
         setState(() => _isBooking = false);
@@ -1128,10 +1332,8 @@ class _BarbershopBookingPageState extends State<BarbershopBookingPage> {
     }
   }
 
-  void _showMessage(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+  void _showMessage(String message, {TopNoticeType type = TopNoticeType.info}) {
+    showTopNotice(context, message: message, type: type);
   }
 
   @override

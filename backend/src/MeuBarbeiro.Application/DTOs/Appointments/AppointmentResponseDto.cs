@@ -12,4 +12,6 @@ public class AppointmentResponseDto
     public decimal TotalPrice { get; set; }
     public string Status { get; set; } = string.Empty;
     public IReadOnlyCollection<AppointmentSelectedServiceDto> SelectedServices { get; set; } = [];
+    public bool HasReview { get; set; }
+    public int? ReviewStars { get; set; }
 }

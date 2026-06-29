@@ -12,6 +12,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Barbershop> Barbershops => Set<Barbershop>();
     public DbSet<Client> Clients => Set<Client>();
     public DbSet<EventProcessingAudit> EventProcessingAudits => Set<EventProcessingAudit>();
+    public DbSet<Review> Reviews => Set<Review>();
     public DbSet<ServiceOffering> ServiceOfferings => Set<ServiceOffering>();
     public DbSet<User> Users => Set<User>();
 
@@ -23,6 +24,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         modelBuilder.ApplyConfiguration(new BarbershopConfiguration());
         modelBuilder.ApplyConfiguration(new ClientConfiguration());
         modelBuilder.ApplyConfiguration(new EventProcessingAuditConfiguration());
+        modelBuilder.ApplyConfiguration(new ReviewConfiguration());
         modelBuilder.ApplyConfiguration(new ServiceOfferingConfiguration());
         modelBuilder.ApplyConfiguration(new UserConfiguration());
         base.OnModelCreating(modelBuilder);

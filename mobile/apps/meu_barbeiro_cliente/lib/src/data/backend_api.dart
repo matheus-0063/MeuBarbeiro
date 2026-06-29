@@ -145,6 +145,23 @@ class BackendApi {
     return decoded['appointmentId'] as String;
   }
 
+  Future<void> createAppointmentReview({
+    required String baseUrl,
+    required String accessToken,
+    required String appointmentId,
+    required int stars,
+  }) async {
+    final response = await _httpClient.post(
+      Uri.parse('$baseUrl/api/v1/appointment/$appointmentId/review'),
+      headers: _authHeaders(accessToken),
+      body: jsonEncode({'stars': stars}),
+    );
+
+    if (response.statusCode != 201) {
+      throw BackendApiException(_extractErrorMessage(response));
+    }
+  }
+
   AuthSession _parseAuthResponse(http.Response response) {
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw BackendApiException(_extractErrorMessage(response));
@@ -313,6 +330,8 @@ class ClientAppointment {
     required this.totalPrice,
     required this.status,
     required this.selectedServices,
+    required this.hasReview,
+    required this.reviewStars,
   });
 
   factory ClientAppointment.fromJson(Map<String, dynamic> json) {
@@ -329,6 +348,8 @@ class ClientAppointment {
       selectedServices: ((json['selectedServices'] as List<dynamic>?) ?? const [])
           .map((item) => AppointmentSelectedService.fromJson(item as Map<String, dynamic>))
           .toList(),
+      hasReview: (json['hasReview'] as bool?) ?? false,
+      reviewStars: json['reviewStars'] as int?,
     );
   }
 
@@ -342,6 +363,8 @@ class ClientAppointment {
   final double totalPrice;
   final String status;
   final List<AppointmentSelectedService> selectedServices;
+  final bool hasReview;
+  final int? reviewStars;
 }
 
 class AppointmentSelectedService {
