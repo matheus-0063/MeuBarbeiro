@@ -11,6 +11,19 @@ public sealed class Appointment
     public DateTime ScheduledAtUtc { get; set; }
     public decimal TotalPrice { get; set; }
     public AppointmentStatus Status { get; set; }
-    
-    public void AlterStatus(AppointmentStatus newStatus) => Status = newStatus;
+
+    public Appointment() { }
+
+    public Appointment(Guid id, Guid clientId, Guid barberId, Guid barbershopId, DateTime scheduledAtUtc, decimal totalPrice, AppointmentStatus status)
+    {
+        Id = id;
+        ClientId = clientId;
+        BarberId = barberId;
+        BarbershopId = barbershopId;
+        ScheduledAtUtc = scheduledAtUtc;
+        TotalPrice = totalPrice;
+        Status = status;
+    }
+
+    public void SetStatus(AppointmentStatus newStatus) => Status = newStatus;
 }
