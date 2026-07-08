@@ -10,6 +10,8 @@ public class Barber
 
     public Barber(Guid userId, Guid? barbershopId = null)
     {
+        if (userId == Guid.Empty) throw new ArgumentException("UserId é obrigatório", nameof(userId));
+        
         Id = Guid.NewGuid();
         UserId = userId;
         BarbershopId = barbershopId;
