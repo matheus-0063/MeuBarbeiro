@@ -13,10 +13,17 @@ public sealed class ServiceOffering
 
     public ServiceOffering(Guid barbershopId, string name, decimal price, int durationMinutes)
     {
+        ValidarBarbershopId(barbershopId);
+        
         Id = Guid.NewGuid();
         BarbershopId = barbershopId;
         Name = name;
         Price = price;
         DurationMinutes = durationMinutes;
+    }
+
+    private static void ValidarBarbershopId(Guid barbershopId)
+    {
+        if (barbershopId == Guid.Empty) throw new ArgumentException("BarbershopId é obrigatório");
     }
 }

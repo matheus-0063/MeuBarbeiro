@@ -19,7 +19,6 @@ public sealed class Barbershop
         Address = address;
         Description = description;
     }
-
     
     public void UpdateDetails(string name, string city, string address, string description)
     {
@@ -31,6 +30,9 @@ public sealed class Barbershop
 
     public void UpdateAverageRating(double averageRating)
     {
+        if (averageRating is < 0 or > 5)
+            throw new ArgumentOutOfRangeException(nameof(averageRating), "A avaliação média deve estar entre 0 e 5.");
+        
         AverageRating = averageRating;
     }
 }

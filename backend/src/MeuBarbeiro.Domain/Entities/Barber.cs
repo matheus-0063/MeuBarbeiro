@@ -10,7 +10,7 @@ public class Barber
 
     public Barber(Guid userId, Guid? barbershopId = null)
     {
-        if (userId == Guid.Empty) throw new ArgumentException("UserId é obrigatório", nameof(userId));
+        ValidarUserId(userId);
         
         Id = Guid.NewGuid();
         UserId = userId;
@@ -21,4 +21,10 @@ public class Barber
     {
         BarbershopId = barbershopId;
     }
+
+    private static void ValidarUserId(Guid userId)
+    {
+        if (userId == Guid.Empty) 
+            throw new ArgumentException("UserId é obrigatório", nameof(userId));
+    } 
 }
