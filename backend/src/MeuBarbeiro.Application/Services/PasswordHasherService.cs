@@ -8,7 +8,6 @@ public class PasswordHasherService : IPasswordHasherService
 {
     private readonly PasswordHasher<User> _passwordHasher = new();
 
-
     public string Hash(string password)
     {
         return _passwordHasher.HashPassword(null!, password);
