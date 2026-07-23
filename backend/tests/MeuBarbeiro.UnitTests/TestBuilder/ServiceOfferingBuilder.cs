@@ -34,12 +34,19 @@ public class ServiceOfferingBuilder
         return this;
     }
 
+    public ServiceOfferingBuilder WithDurationMinutes(int durationMinutes)
+    {
+        _durationMinutes = durationMinutes;
+        return this;
+    }
+
     public ServiceOffering Build()
     {
         var serviceOffering = new ServiceOffering(
             barbershopId: _barbershopId,
             name: _name,
             price: _price,
+            description: _description,
             durationMinutes: _durationMinutes
         );
         

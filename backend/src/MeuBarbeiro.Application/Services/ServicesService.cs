@@ -11,31 +11,31 @@ public class ServicesService(
     IBarbershopRepository barbershopRepository,
     IServiceOfferingRepository serviceOfferingRepository) : IServicesService
 {
-    public async Task<ServiceResult<Guid>> AddServices(AddServicesRequestDto request)
+    public async Task<ServiceResult<Guid>> AddServices(AddServicesRequestDto request,
+        CancellationToken cancellationToken = default)
     {
-        var barbershop = await barbershopRepository.GetByIdAsync(request.BarbershopId);
+        var barbershop = await barbershopRepository.GetByIdAsync(request.BarbershopId, cancellationToken);
         if (barbershop == null)
         {
             var validationResult = new ValidationResult();
-            validationResult.Errors.Add(new ValidationFailure(nameof(request.BarbershopId), "Barbearia nao encontrada."));
+            validationResult.Errors.Add(
+                new ValidationFailure(nameof(request.BarbershopId), "Barbearia nao encontrada."));
             return ServiceResult<Guid>.Failure(validationResult);
         }
 
         var serviceOffering = request.ToEntity();
-        var validation = await serviceOfferingRepository.AddAsync(serviceOffering);
+        var validation = await serviceOfferingRepository.AddAsync(serviceOffering, cancellationToken);
 
         return validation.IsValid
             ? ServiceResult<Guid>.Success(serviceOffering.Id)
             : ServiceResult<Guid>.Failure(validation);
     }
 
-    public async Task<ServiceResult<IEnumerable<ServiceResponseDto>>> GetServices(Guid barbershopId, CancellationToken cancellationToken = default)
+    public async Task<ServiceResult<IEnumerable<ServiceResponseDto>>> GetServices(Guid barbershopId,
+        CancellationToken cancellationToken = default)
     {
         var barbershop = await barbershopRepository.GetByIdAsync(barbershopId, cancellationToken);
-        if (barbershop == null)
-        {
-            return ServiceResult<IEnumerable<ServiceResponseDto>>.NotFound();
-        }
+        if (barbershop == null) return ServiceResult<IEnumerable<ServiceResponseDto>>.NotFound();
 
         var services = await serviceOfferingRepository.ListByBarbershopAsync(barbershopId, cancellationToken);
         var response = services.Select(service => service.ToResponseDto());

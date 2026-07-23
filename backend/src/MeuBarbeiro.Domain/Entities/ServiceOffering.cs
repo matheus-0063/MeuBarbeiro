@@ -11,13 +11,14 @@ public sealed class ServiceOffering
 
     public ServiceOffering() {  }
 
-    public ServiceOffering(Guid barbershopId, string name, decimal price, int durationMinutes)
+    public ServiceOffering(Guid barbershopId, string name, string description, decimal price, int durationMinutes)
     {
         ValidarBarbershopId(barbershopId);
         
         Id = Guid.NewGuid();
         BarbershopId = barbershopId;
         Name = name;
+        Description = description;
         Price = price;
         DurationMinutes = durationMinutes;
     }

@@ -64,7 +64,7 @@ public class ServicesController(
             return Forbid();
         }
 
-        var result = await servicesService.AddServices(request);
+        var result = await servicesService.AddServices(request, cancellationToken);
         if (ResponseHasErros(result.ValidationResult))
         {
             return ValidationProblem();
