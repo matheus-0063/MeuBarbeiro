@@ -5,6 +5,7 @@ using MeuBarbeiro.Application.Abstractions.Services;
 using MeuBarbeiro.Application.DTOs.Auth;
 using MeuBarbeiro.Application.DTOs.Barbers;
 using MeuBarbeiro.Application.DTOs.Clients;
+using MeuBarbeiro.Application.Exceptions;
 using MeuBarbeiro.Application.Services;
 using MeuBarbeiro.Domain.Entities;
 using MeuBarbeiro.UnitTests.TestBuilder;
@@ -28,6 +29,8 @@ public class AuthServiceTests
     private const string Audience = "MeuBarbeiro.App";
     private const string SecretKey = "chave-ficticia-exclusiva-para-testes-com-pelo-menos-32-bytes";
     private const int ExpirationMinutes = 120;
+    
+    private Func<Task<AuthResponse>>? _authFunc;
 
     public AuthServiceTests()
     {
@@ -106,13 +109,13 @@ public class AuthServiceTests
             .ReturnsAsync(new User());
 
         // Act
-        var action = () => _authService.RegisterClientAsync(request);
+        _authFunc = () => _authService.RegisterClientAsync(request);
 
         // Assert
-        var exception = await Assert.ThrowsAsync<Exception>(action);
+        var exception = await Assert.ThrowsAsync<EmailAlreadyRegisteredException>(_authFunc);
 
         exception.Should().NotBeNull();
-        exception.Message.Should().Be($"Email {request.Email} já cadastrado");
+        exception.Message.Should().Be($"Email {request.Email} ja cadastrado.");
 
         _userRepositoryMock.Verify(x => x.GetByEmailAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Once);
@@ -180,13 +183,13 @@ public class AuthServiceTests
             .ReturnsAsync(new User());
         
         // Act
-        var action = () => _authService.RegisterBarberAsync(request);
+        _authFunc = () => _authService.RegisterBarberAsync(request);
         
         // Assert
-        var exception = await Assert.ThrowsAsync<Exception>(action);
+        var exception = await Assert.ThrowsAsync<EmailAlreadyRegisteredException>(_authFunc);
         
         exception.Should().NotBeNull();
-        exception.Message.Should().Be($"Email {request.Email} já cadastrado");
+        exception.Message.Should().Be($"Email {request.Email} ja cadastrado.");
         
         _userRepositoryMock.Verify(x => x.GetByEmailAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Once);
@@ -243,9 +246,9 @@ public class AuthServiceTests
         var action = () => _authService.LoginAsync(request);
         
         //Assert
-        await action.Should()
-            .ThrowAsync<Exception>()
-            .WithMessage("E-mail não cadastrado");
+        await action.Should()   
+            .ThrowAsync<InvalidCredentialsException>()
+            .WithMessage("E-mail ou senha inválidos.");
         
         _userRepositoryMock.Verify(x => x.GetByEmailAsync(request.Email, It.IsAny<CancellationToken>()), Times.Once);
         _passwordHasherMock.Verify(x => x.VerifyPasswordHash(request.Email, It.IsAny<string>()), Times.Never);
@@ -273,7 +276,7 @@ public class AuthServiceTests
         
         // Assert
         await action.Should()
-            .ThrowAsync<Exception>()
+            .ThrowAsync<InvalidCredentialsException>()
             .WithMessage("E-mail ou senha inválidos.");
         
         _userRepositoryMock.Verify(x => x.GetByEmailAsync(request.Email, It.IsAny<CancellationToken>()), Times.Once);
