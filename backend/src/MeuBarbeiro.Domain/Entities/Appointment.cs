@@ -16,6 +16,8 @@ public sealed class Appointment
 
     public Appointment(Guid id, Guid clientId, Guid barberId, Guid barbershopId, DateTime scheduledAtUtc, decimal totalPrice, AppointmentStatus status)
     {
+        if (clientId == Guid.Empty) throw new ArgumentNullException(nameof(clientId));
+        
         Id = id;
         ClientId = clientId;
         BarberId = barberId;

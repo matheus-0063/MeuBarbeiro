@@ -17,7 +17,7 @@ public class AppointmentTests
     }
 
     [Fact]
-    public void Appointment_DeveFalhar_QuandoClientIdForNull()
+    public void Appointment_DeveFalhar_QuandoClientIdForVazio()
     {
         // Act 
         var appointment = () => new AppointmentBuilder()
