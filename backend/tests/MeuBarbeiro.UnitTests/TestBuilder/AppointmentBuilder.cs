@@ -9,9 +9,8 @@ public class AppointmentBuilder
     private Guid _barberId = Guid.NewGuid();
     private Guid _barbershopId = Guid.NewGuid();
     private Guid _serviceId = Guid.NewGuid();
-    private DateTime _scheduledAt = DateTime.Today.AddDays(1);
-    private decimal _totalPrice = 0;
-    private AppointmentStatus _status = AppointmentStatus.Pending;
+    private DateTime _scheduledAt = DateTime.UtcNow.AddDays(1);
+    private decimal _totalPrice = 40.0m;
 
     public AppointmentBuilder WithClientId(Guid clientId)
     {
@@ -37,28 +36,26 @@ public class AppointmentBuilder
         return this;
     }
 
+    public AppointmentBuilder WithScheduledAtUtc(DateTime scheduledAt)
+    {
+        _scheduledAt = scheduledAt;
+        return this;
+    }
+
     public AppointmentBuilder WithTotalPrice(decimal totalPrice)
     {
         _totalPrice = totalPrice;
         return this;
     }
 
-    public AppointmentBuilder WithStatus(AppointmentStatus newStatus)
-    {
-        _status = newStatus;
-        return this;
-    }
-
     public Appointment Build()
     {
         var appointment = new Appointment(
-            id: Guid.NewGuid(),    
             clientId: _clientId,
             barberId: _barberId,
             barbershopId: _barbershopId,
             scheduledAtUtc: _scheduledAt,
-            totalPrice: _totalPrice,
-            status: _status);
+            totalPrice: _totalPrice);
 
         return appointment;
     }

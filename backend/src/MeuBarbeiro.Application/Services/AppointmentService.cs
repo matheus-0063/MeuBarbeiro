@@ -207,7 +207,7 @@ public class AppointmentService(
             return ServiceResult<bool>.NotFound();
         }
 
-        appointment.SetStatus(request.Status);
+        //appointment.SetStatus(request.Status);
 
         var validationResult = await appointmentRepository.UpdateAsync(appointment);
 
