@@ -13,6 +13,11 @@
 	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=4f3fa351_002Dc938_002D4322_002Db6a5_002D9adcc343c43d/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="All tests from Solution" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
   &lt;Solution /&gt;
 &lt;/SessionState&gt;</s:String>
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=fb3b0220_002Df4ee_002D456f_002Db055_002D2c9341c89013/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="CreateAppointment_DeveCriarUmAgendamento_QuandoRequestForValido" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
+  &lt;TestAncestor&gt;
+    &lt;TestId&gt;xUnit::AD56B27A-5D4E-486F-A488-CE40F3692A46::net9.0::MeuBarbeiro.UnitTests.Application.Services.AppointmentServiceTests.CreateAppointment_DeveCriarUmAgendamento_QuandoRequestForValido&lt;/TestId&gt;
+  &lt;/TestAncestor&gt;
+&lt;/SessionState&gt;</s:String>
 	
 	
 	</wpf:ResourceDictionary>

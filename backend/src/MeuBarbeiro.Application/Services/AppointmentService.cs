@@ -11,49 +11,40 @@ using MeuBarbeiro.Domain.Enums;
 
 namespace MeuBarbeiro.Application.Services;
 
-public class AppointmentService(
-    IAppointmentRepository appointmentRepository,
-    IAppointmentServiceSelectionRepository appointmentServiceSelectionRepository,
-    IBarberRepository barberRepository,
-    IBarbershopRepository barbershopRepository,
-    IClientRepository clientRepository,
-    IReviewRepository reviewRepository,
-    IServiceOfferingRepository serviceOfferingRepository,
-    IUserRepository userRepository,
-    IEventPublisher eventPublisher) : IAppointmentService
+public class AppointmentService(IAppointmentRepository appointmentRepository, IAppointmentServiceSelectionRepository appointmentServiceSelectionRepository, IBarberRepository barberRepository,
+    IBarbershopRepository barbershopRepository, IClientRepository clientRepository, IReviewRepository reviewRepository, IServiceOfferingRepository serviceOfferingRepository,
+    IUserRepository userRepository, IEventPublisher eventPublisher) : IAppointmentService
 {
-    public async Task<ServiceResult<Guid>> CreateAppointment(CreateAppointmentRequestDto request, Guid clientId)
+    public async Task<ServiceResult<Guid>> CreateAppointment(CreateAppointmentRequestDto request, Guid clientId, CancellationToken cancellationToken = default)
     {
-        var barber = await barberRepository.GetByBarbershopIdAsync(request.BarbershopId);
-        if (barber is null)
-        {
-            var barberValidationResult = new ValidationResult();
-            barberValidationResult.Errors.Add(new ValidationFailure(nameof(request.BarbershopId), "Nao existe barbeiro vinculado a barbearia selecionada."));
-            return ServiceResult<Guid>.Failure(barberValidationResult);
-        }
-
+        var validationResult = new ValidationResult();
+        
         if (request.ServiceIds.Count == 0)
         {
-            var serviceValidationResult = new ValidationResult();
-            serviceValidationResult.Errors.Add(new ValidationFailure(nameof(request.ServiceIds), "Selecione pelo menos um servico."));
-            return ServiceResult<Guid>.Failure(serviceValidationResult);
-        }
-
-        var selectedServices = await serviceOfferingRepository.ListByIdsAsync(request.ServiceIds);
-        if (selectedServices.Count != request.ServiceIds.Distinct().Count() || selectedServices.Any(service => service.BarbershopId != request.BarbershopId))
-        {
-            var serviceValidationResult = new ValidationResult();
-            serviceValidationResult.Errors.Add(new ValidationFailure(nameof(request.ServiceIds), "Um ou mais servicos selecionados nao pertencem a barbearia."));
-            return ServiceResult<Guid>.Failure(serviceValidationResult);
-        }
-
-        var appointment = request.ToEntity(clientId, barber.Id);
-        var validationResult = await appointmentRepository.AddAsync(appointment);
-
-        if (!validationResult.IsValid)
-        {
+            validationResult.Errors.Add(new ValidationFailure(nameof(request.ServiceIds), "Selecione pelo menos um servico."));
             return ServiceResult<Guid>.Failure(validationResult);
         }
+        
+        var barber = await barberRepository.GetByBarbershopIdAsync(request.BarbershopId, cancellationToken);
+        if (barber is null)
+        {
+            validationResult.Errors.Add(new ValidationFailure(nameof(request.BarbershopId), "Nao existe barbeiro vinculado a barbearia selecionada."));
+            return ServiceResult<Guid>.Failure(validationResult);
+        }
+
+        var selectedServices = await serviceOfferingRepository.ListByIdsAsync(request.ServiceIds, cancellationToken);
+        if (selectedServices.Count != request.ServiceIds.Distinct().Count() || selectedServices.Any(service => service.BarbershopId != request.BarbershopId))
+        {
+            validationResult.Errors.Add(new ValidationFailure(nameof(request.ServiceIds), "Um ou mais servicos selecionados nao pertencem a barbearia."));
+            return ServiceResult<Guid>.Failure(validationResult);
+        }
+        
+        var totalPrice = selectedServices.Sum(service => service.Price);
+
+        var appointment = request.ToEntity(clientId, barber.Id, totalPrice);
+        validationResult = await appointmentRepository.AddAsync(appointment, cancellationToken);
+
+        if (!validationResult.IsValid) return ServiceResult<Guid>.Failure(validationResult);
 
         var selections = request.ServiceIds
             .Distinct()
@@ -64,7 +55,7 @@ public class AppointmentService(
             })
             .ToArray();
 
-        var selectionValidationResult = await appointmentServiceSelectionRepository.AddRangeAsync(selections);
+        var selectionValidationResult = await appointmentServiceSelectionRepository.AddRangeAsync(selections, cancellationToken);
         if (!selectionValidationResult.IsValid)
         {
             return ServiceResult<Guid>.Failure(selectionValidationResult);
@@ -76,7 +67,7 @@ public class AppointmentService(
             appointment.BarberId,
             appointment.BarbershopId,
             appointment.ScheduledAtUtc,
-            appointment.TotalPrice));
+            appointment.TotalPrice), cancellationToken);
 
         return ServiceResult<Guid>.Success(appointment.Id);
     }

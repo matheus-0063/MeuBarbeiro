@@ -38,7 +38,7 @@ public class AppointmentController(
             });
         }
 
-        var result = await appointmentService.CreateAppointment(request, client.Id);
+        var result = await appointmentService.CreateAppointment(request, client.Id, cancellationToken);
 
         if (ResponseHasErros(result.ValidationResult))
         {
