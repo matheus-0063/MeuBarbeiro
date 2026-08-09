@@ -3,12 +3,11 @@ using System.Security.Claims;
 using System.Text;
 using MeuBarbeiro.Application.Abstractions.Services;
 using MeuBarbeiro.Domain.Entities;
-using MeuBarbeiro.Domain.Settings;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using JwtRegisteredClaimNames = Microsoft.IdentityModel.JsonWebTokens.JwtRegisteredClaimNames;
 
-namespace MeuBarbeiro.Application.Services;
+namespace MeuBarbeiro.Infrastructure.Security.Jwt;
 
 public class JwtTokenService(IConfiguration configuration) : IJwtTokenService
 {

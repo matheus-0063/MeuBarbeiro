@@ -26,6 +26,7 @@
       <ProjectReference Include="..\..\src\MeuBarbeiro.Application\MeuBarbeiro.Application.csproj" />
       <ProjectReference Include="..\..\src\MeuBarbeiro.Contracts\MeuBarbeiro.Contracts.csproj" />
       <ProjectReference Include="..\..\src\MeuBarbeiro.Domain\MeuBarbeiro.Domain.csproj" />
+      <ProjectReference Include="..\..\src\MeuBarbeiro.Infrastructure\MeuBarbeiro.Infrastructure.csproj" />
     </ItemGroup>
 
 </Project>

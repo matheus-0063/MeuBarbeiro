@@ -1,4 +1,4 @@
-namespace MeuBarbeiro.Domain.Settings;
+namespace MeuBarbeiro.Infrastructure.Security.Jwt;
 
 public class JwtSettings
 {

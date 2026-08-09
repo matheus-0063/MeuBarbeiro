@@ -1,15 +1,13 @@
 using System.Text;
 using Asp.Versioning;
-using MeuBarbeiro.Application.Abstractions.Messaging;
-using MeuBarbeiro.Application.Abstractions.Persistence;
+using MeuBarbeiro.Application;
 using MeuBarbeiro.Application.Abstractions.Services;
 using MeuBarbeiro.Application.Services;
+using MeuBarbeiro.Infrastructure;
 using MeuBarbeiro.Infrastructure.Messaging;
 using MeuBarbeiro.Infrastructure.Persistence;
-using MeuBarbeiro.Infrastructure.Persistence.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.OpenApi.Models;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -45,6 +43,7 @@ builder.Services.AddSwaggerGen(options =>
         }
     });
 });
+
 builder.Services
     .AddApiVersioning(options =>
     {
@@ -77,27 +76,9 @@ builder.Services
     });
 
 builder.Services.AddAuthorization();
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
-builder.Services.AddSingleton<DatabaseSchemaInitializer>();
-builder.Services.Configure<RabbitMqOptions>(builder.Configuration.GetSection(RabbitMqOptions.SectionName));
-builder.Services.AddSingleton<IRabbitMqConnectionProvider, RabbitMqConnectionProvider>();
-builder.Services.AddSingleton<RabbitMqTopologyInitializer>();
-builder.Services.AddScoped<IEventPublisher, RabbitMqEventPublisher>();
-builder.Services.AddScoped<IAppointmentRepository, SqliteAppointmentRepository>();
-builder.Services.AddScoped<IAppointmentServiceSelectionRepository, SqliteAppointmentServiceSelectionRepository>();
-builder.Services.AddScoped<IBarberRepository, SqliteBarberRepository>();
-builder.Services.AddScoped<IBarbershopRepository, SqliteBarbershopRepository>();
-builder.Services.AddScoped<IClientRepository, SqliteClientRepository>();
-builder.Services.AddScoped<IReviewRepository, SqliteReviewRepository>();
-builder.Services.AddScoped<IServiceOfferingRepository, SqliteServiceOfferingRepository>();
-builder.Services.AddScoped<IUserRepository, SqliteUserRepository>();
-builder.Services.AddScoped<IPasswordHasherService, PasswordHasherService>();
-builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
-builder.Services.AddScoped<AuthService>();
-builder.Services.AddScoped<IAppointmentService, AppointmentService>();
-builder.Services.AddScoped<IBarbershopService, BarbershopService>();
-builder.Services.AddScoped<IServicesService, ServicesService>();
+builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddApplication();
+
 
 var app = builder.Build();
 

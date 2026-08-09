@@ -1,7 +1,7 @@
 using FluentAssertions;
-using MeuBarbeiro.Application.Services;
+using MeuBarbeiro.Infrastructure.Security.Password;
 
-namespace MeuBarbeiro.UnitTests.Application.Services;
+namespace MeuBarbeiro.UnitTests.Infrastructure.Services;
 
 public class PasswordHasherServiceTests
 {

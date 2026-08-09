@@ -2,7 +2,7 @@ using MeuBarbeiro.Application.Abstractions.Services;
 using MeuBarbeiro.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
 
-namespace MeuBarbeiro.Application.Services;
+namespace MeuBarbeiro.Infrastructure.Security.Password;
 
 public class PasswordHasherService : IPasswordHasherService
 {

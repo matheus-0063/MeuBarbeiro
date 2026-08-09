@@ -10,7 +10,7 @@ using MeuBarbeiro.Domain.Enums;
 namespace MeuBarbeiro.Application.Services;
 
 public class AuthService(IUserRepository userRepository, IClientRepository clientRepository, IBarberRepository barberRepository, 
-    IPasswordHasherService passwordHasher, IJwtTokenService jwtTokenService)
+    IPasswordHasherService passwordHasher, IJwtTokenService jwtTokenService) : IAuthService
 {
 
     public async Task<AuthResponse> RegisterClientAsync(RegisterClientRequest request, CancellationToken cancellationToken = default)

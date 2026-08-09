@@ -14,9 +14,7 @@
   &lt;Solution /&gt;
 &lt;/SessionState&gt;</s:String>
 	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=fb3b0220_002Df4ee_002D456f_002Db055_002D2c9341c89013/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="CreateAppointment_DeveCriarUmAgendamento_QuandoRequestForValido" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
-  &lt;TestAncestor&gt;
-    &lt;TestId&gt;xUnit::AD56B27A-5D4E-486F-A488-CE40F3692A46::net9.0::MeuBarbeiro.UnitTests.Application.Services.AppointmentServiceTests.CreateAppointment_DeveCriarUmAgendamento_QuandoRequestForValido&lt;/TestId&gt;
-  &lt;/TestAncestor&gt;
+  &lt;Project Location="/Users/matheusfernandes/Documents/MeuBarbeiro" Presentation="&amp;lt;backend&amp;gt;\&amp;lt;tests&amp;gt;" /&gt;
 &lt;/SessionState&gt;</s:String>
 	
 	

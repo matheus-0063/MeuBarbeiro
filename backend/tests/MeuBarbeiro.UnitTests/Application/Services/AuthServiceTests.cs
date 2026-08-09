@@ -23,7 +23,7 @@ public class AuthServiceTests
     private readonly Mock<IPasswordHasherService> _passwordHasherMock;
     private readonly Mock<IJwtTokenService> _jwtTokenServiceMock;
 
-    private readonly AuthService _authService;
+    private readonly IAuthService _authService;
 
     private const string Issuer = "MeuBarbeiro.Api";
     private const string Audience = "MeuBarbeiro.App";
