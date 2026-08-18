@@ -11,9 +11,7 @@ namespace MeuBarbeiro.Api.Controllers;
 
 [ApiVersion("1.0")]
 [Route("api/v{version:apiVersion}/appointment")]
-public class AppointmentController(
-    IAppointmentService appointmentService,
-    IClientRepository clientRepository,
+public class AppointmentController(IAppointmentService appointmentService, IClientRepository clientRepository, 
     IBarberRepository barberRepository) : BaseController
 {
     [Authorize(Roles = "Client")]
@@ -57,7 +55,7 @@ public class AppointmentController(
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetAppointment(Guid appointmentId, CancellationToken cancellationToken)
     {
-        var result = await appointmentService.GetAppointment(appointmentId);
+        var result = await appointmentService.GetAppointmentAsync(appointmentId);
 
         if (result.IsNotFound) return NotFound();
         if (!TryGetAuthenticatedUserId(out var userId)) return Unauthorized();
@@ -176,6 +174,28 @@ public class AppointmentController(
         return CreatedAtAction(nameof(GetAppointment), new { version = "1.0", appointmentId }, result.Data);
     }
 
+
+    [Authorize(Roles = "Barber")]
+    [HttpPatch("{appointmentId:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> AcceptAppointment(Guid appointmentId, CancellationToken cancellationToken)
+    {
+        if (!TryGetAuthenticatedUserId(out var userId)) return Unauthorized();
+        
+        var result = await appointmentService.AcceptAppointment(appointmentId, userId, cancellationToken);
+        
+        if (result.IsNotFound) return NotFound();
+        if (result.IsForbidden) return Forbid();
+        
+        return ResponseHasErros(result.ValidationResult) 
+            ? ValidationProblem() 
+            : NoContent();
+    }
+    
     [Authorize(Roles = "Barber")]
     [HttpPatch("{appointmentId:guid}/status")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -199,7 +219,7 @@ public class AppointmentController(
             });
         }
 
-        var appointmentResult = await appointmentService.GetAppointment(appointmentId);
+        var appointmentResult = await appointmentService.GetAppointmentAsync(appointmentId);
         if (appointmentResult.IsNotFound)
         {
             return NotFound();

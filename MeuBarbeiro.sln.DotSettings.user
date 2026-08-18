@@ -13,6 +13,12 @@
 	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=4f3fa351_002Dc938_002D4322_002Db6a5_002D9adcc343c43d/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="All tests from Solution" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
   &lt;Solution /&gt;
 &lt;/SessionState&gt;</s:String>
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=a8732620_002D138b_002D4d03_002Da607_002D4a270f354012/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" Name="All tests from &amp;lt;backend&amp;gt;\&amp;lt;tests&amp;gt; #2" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
+  &lt;Project Location="/Users/matheusfernandes/Documents/MeuBarbeiro" Presentation="&amp;lt;backend&amp;gt;\&amp;lt;tests&amp;gt;" /&gt;
+&lt;/SessionState&gt;</s:String>
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=cc37aed5_002D7e26_002D4fac_002D99e7_002Dabc51db2b7b4/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="All tests from &amp;lt;backend&amp;gt;\&amp;lt;tests&amp;gt;" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
+  &lt;Project Location="/Users/matheusfernandes/Documents/MeuBarbeiro" Presentation="&amp;lt;backend&amp;gt;\&amp;lt;tests&amp;gt;" /&gt;
+&lt;/SessionState&gt;</s:String>
 	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=fb3b0220_002Df4ee_002D456f_002Db055_002D2c9341c89013/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="CreateAppointment_DeveCriarUmAgendamento_QuandoRequestForValido" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
   &lt;Project Location="/Users/matheusfernandes/Documents/MeuBarbeiro" Presentation="&amp;lt;backend&amp;gt;\&amp;lt;tests&amp;gt;" /&gt;
 &lt;/SessionState&gt;</s:String>

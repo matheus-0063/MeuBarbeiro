@@ -1,4 +1,5 @@
 using MeuBarbeiro.Domain.Enums;
+using MeuBarbeiro.Domain.Exceptions;
 
 namespace MeuBarbeiro.Domain.Entities;
 
@@ -32,7 +33,7 @@ public sealed class Appointment
     public void Accept(Guid barberId)
     {
         VerifyBarberId(barberId);
-        if (Status != AppointmentStatus.Pending) throw new InvalidOperationException();
+        if (Status != AppointmentStatus.Pending) throw new AppointmentStatusTransitionException(Status, AppointmentStatus.Accepted);
         
         Status = AppointmentStatus.Accepted;
     }
@@ -47,9 +48,9 @@ public sealed class Appointment
 
     public void Cancel(Guid userId, DateTime nowUtc)
     {
-        if (userId == Guid.Empty || (userId != BarberId && userId != ClientId)) throw new ArgumentException(nameof(userId));
+        if (userId == Guid.Empty || (userId != BarberId && userId != ClientId)) throw new ArgumentException(null, nameof(userId));
         if (nowUtc >= ScheduledAtUtc.AddHours(-2)) throw new InvalidOperationException();
-        if(Status == AppointmentStatus.Cancelled || Status == AppointmentStatus.Completed || Status == AppointmentStatus.Rejected) throw new InvalidOperationException();
+        if(Status is AppointmentStatus.Cancelled or AppointmentStatus.Completed or AppointmentStatus.Rejected) throw new InvalidOperationException();
         
         Status = AppointmentStatus.Cancelled;
     }
@@ -72,7 +73,7 @@ public sealed class Appointment
 
     private void VerifyBarberId(Guid barberId)
     {
-        if (barberId == Guid.Empty) throw new ArgumentException(nameof(barberId));
-        if (BarberId != barberId) throw new ArgumentException(nameof(barberId));
+        if (barberId == Guid.Empty) throw new ArgumentException(null, nameof(barberId));
+        if (BarberId != barberId) throw new AppointmentActorNotAllowedException(Id, BarberId, barberId);
     }
 }

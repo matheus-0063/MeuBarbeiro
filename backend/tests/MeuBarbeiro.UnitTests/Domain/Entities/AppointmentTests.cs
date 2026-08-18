@@ -1,5 +1,6 @@
 using FluentAssertions;
 using MeuBarbeiro.Domain.Enums;
+using MeuBarbeiro.Domain.Exceptions;
 using MeuBarbeiro.UnitTests.TestBuilder;
 
 namespace MeuBarbeiro.UnitTests.Domain.Entities;
@@ -61,7 +62,7 @@ public class AppointmentTests
         var act = () => appointment.Accept(barberId);
         
         // Assert
-        act.Should().Throw<ArgumentException>();
+        act.Should().Throw<AppointmentActorNotAllowedException>();
         appointment.Status.Should().Be(AppointmentStatus.Pending);
     }
     
@@ -80,7 +81,7 @@ public class AppointmentTests
         var act = () => appointment.Accept(barberId);
         
         // Arrange
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<AppointmentStatusTransitionException>();
         appointment.Status.Should().Be(AppointmentStatus.Accepted);
     }
     #endregion
@@ -120,7 +121,7 @@ public class AppointmentTests
         var act = () => appointment.Start(Guid.NewGuid());
         
         // Assert
-        act.Should().Throw<ArgumentException>();
+        act.Should().Throw<AppointmentActorNotAllowedException>();
         appointment.Status.Should().Be(AppointmentStatus.Accepted);
     }
 
@@ -180,7 +181,7 @@ public class AppointmentTests
         var act = () => appointment.Complete(Guid.NewGuid());
         
         // Assert
-        act.Should().Throw<ArgumentException>();
+        act.Should().Throw<AppointmentActorNotAllowedException>();
         appointment.Status.Should().Be(AppointmentStatus.InProgress);
     }
 
@@ -238,7 +239,7 @@ public class AppointmentTests
         var act = () => appointment.Reject(Guid.NewGuid());
         
         // Assert
-        act.Should().Throw<ArgumentException>();
+        act.Should().Throw<AppointmentActorNotAllowedException>();
         appointment.Status.Should().Be(AppointmentStatus.Pending);
     }
 
