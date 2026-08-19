@@ -6,13 +6,13 @@ namespace MeuBarbeiro.Application.Mappings.Barbershops;
 public static class BarbershopMapping
 {
     public static Barbershop ToEntity(this CreateBarbershopRequestDto request) => new Barbershop
-    {
-        Id = Guid.NewGuid(),
-        Name = request.Name,
-        City = request.City,
-        Address = request.Address,
-        Description = request.Description,
-    };
+    (
+        ownerUserId: request.OwnerUserId,
+        name: request.Name,
+        city: request.City,
+        address: request.Address,
+        description: request.Description
+    );
 
     public static BarbershopResponseDto ToResponseDto(this Barbershop entity) => new BarbershopResponseDto
     {

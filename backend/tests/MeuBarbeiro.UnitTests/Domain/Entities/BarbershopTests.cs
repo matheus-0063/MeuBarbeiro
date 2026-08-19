@@ -10,10 +10,24 @@ public class BarbershopTests
     {
         // Arrange 
         var barbershop = new BarbershopBuilder()
+            .WithOwnerUserId(Guid.NewGuid())
             .Build();
         
         // Assert
         barbershop.Id.Should().NotBeEmpty();
+        barbershop.OwnerUserId.Should().Be(barbershop.OwnerUserId);
+    }
+    
+    [Fact]
+    public void Barbershop_DeveFalhar_QuandoOwnerUserIdForEmpty()
+    {
+        // Arrange 
+        var func = () => new BarbershopBuilder()
+            .WithOwnerUserId(Guid.Empty)
+            .Build();
+        
+        // Assert
+        func.Should().Throw<ArgumentException>();
     }
 
     [Fact]
@@ -21,6 +35,7 @@ public class BarbershopTests
     {
         // Arrange
         var barbershop = new BarbershopBuilder()
+            .WithOwnerUserId(Guid.NewGuid())
             .Build();
 
         const string newName = "Barbearia Central";
@@ -46,6 +61,7 @@ public class BarbershopTests
     {
         // Arrange
         var barbershop = new BarbershopBuilder()
+            .WithOwnerUserId(Guid.NewGuid())
             .Build();
         
         // Act 
@@ -63,6 +79,7 @@ public class BarbershopTests
     {
         // Arrange
         var barbershop = new BarbershopBuilder()
+            .WithOwnerUserId(Guid.NewGuid())
             .Build();
         
         // Act
@@ -71,4 +88,6 @@ public class BarbershopTests
         // Assert
         barbershop.AverageRating.Should().Be(avaliacao);
     }
+    
+    
 }

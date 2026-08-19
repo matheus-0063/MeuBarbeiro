@@ -10,14 +10,30 @@
 	<s:String x:Key="/Default/CodeInspection/ExcludedFiles/FilesAndFoldersToSkip2/=7020124F_002D9FFC_002D4AC3_002D8F3D_002DAAB8E0240759_002Ff_003AMethodBaseInvoker_002Ecs_002Fl_003A_002E_002E_003F_002E_002E_003FLibrary_003FApplication_0020Support_003FJetBrains_003FRider2024_002E3_003Fresharper_002Dhost_003FSourcesCache_003Fd6b757e154dd7f8c23e0e785431c97a76e4b9c6bdae38b978238421dbab55d_003FMethodBaseInvoker_002Ecs/@EntryIndexedValue">ForceIncluded</s:String>
 	<s:String x:Key="/Default/CodeInspection/ExcludedFiles/FilesAndFoldersToSkip2/=7020124F_002D9FFC_002D4AC3_002D8F3D_002DAAB8E0240759_002Ff_003ATestInvoker_002Ecs_002Fl_003A_002E_002E_003F_002E_002E_003FLibrary_003FApplication_0020Support_003FJetBrains_003FRider2024_002E3_003Fresharper_002Dhost_003FSourcesCache_003Fc3ec25c53b94f51fa21da479c513e551efee2b5ae49a79934686d2bb714d46_003FTestInvoker_002Ecs/@EntryIndexedValue">ForceIncluded</s:String>
 	<s:String x:Key="/Default/Environment/Highlighting/HighlightingSourceSnapshotLocation/@EntryValue">/Users/matheusfernandes/Library/Caches/JetBrains/Rider2024.3/resharper-host/temp/Rider/vAny/CoverageData/_MeuBarbeiro.1841509406/Snapshot/snapshot.utdcvr</s:String>
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=34e60567_002Da861_002D438e_002D9833_002D823deb876b4b/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" Name="AssignBarbershop_DeveAtribuirBarbershop_QuandoForValoresValidos #3" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
+  &lt;TestAncestor&gt;
+    &lt;TestId&gt;xUnit::AD56B27A-5D4E-486F-A488-CE40F3692A46::net9.0::MeuBarbeiro.UnitTests.Domain.Entities.BarberTests.AssignBarbershop_DeveAtribuirBarbershop_QuandoForValoresValidos&lt;/TestId&gt;
+  &lt;/TestAncestor&gt;
+&lt;/SessionState&gt;</s:String>
 	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=4f3fa351_002Dc938_002D4322_002Db6a5_002D9adcc343c43d/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="All tests from Solution" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
   &lt;Solution /&gt;
+&lt;/SessionState&gt;</s:String>
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=8d05a5cc_002D8510_002D4d53_002D8498_002D2534e0f3420c/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" Name="AssignBarbershop_DeveAtribuirBarbershop_QuandoForValoresValidos" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
+  &lt;TestAncestor&gt;
+    &lt;TestId&gt;xUnit::AD56B27A-5D4E-486F-A488-CE40F3692A46::net9.0::MeuBarbeiro.UnitTests.Domain.Entities.BarberTests.AssignBarbershop_DeveAtribuirBarbershop_QuandoForValoresValidos&lt;/TestId&gt;
+  &lt;/TestAncestor&gt;
 &lt;/SessionState&gt;</s:String>
 	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=a8732620_002D138b_002D4d03_002Da607_002D4a270f354012/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" Name="All tests from &amp;lt;backend&amp;gt;\&amp;lt;tests&amp;gt; #2" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
   &lt;Project Location="/Users/matheusfernandes/Documents/MeuBarbeiro" Presentation="&amp;lt;backend&amp;gt;\&amp;lt;tests&amp;gt;" /&gt;
 &lt;/SessionState&gt;</s:String>
 	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=cc37aed5_002D7e26_002D4fac_002D99e7_002Dabc51db2b7b4/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="All tests from &amp;lt;backend&amp;gt;\&amp;lt;tests&amp;gt;" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
   &lt;Project Location="/Users/matheusfernandes/Documents/MeuBarbeiro" Presentation="&amp;lt;backend&amp;gt;\&amp;lt;tests&amp;gt;" /&gt;
+&lt;/SessionState&gt;</s:String>
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=f1919b21_002D52fd_002D4850_002Da17c_002D2e6b449fe943/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="AssignBarbershop_DeveAtribuirBarbershop_QuandoForValoresValidos #2" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
+  &lt;TestAncestor&gt;
+    &lt;TestId&gt;xUnit::AD56B27A-5D4E-486F-A488-CE40F3692A46::net9.0::MeuBarbeiro.UnitTests.Domain.Entities.BarberTests&lt;/TestId&gt;
+    &lt;TestId&gt;xUnit::AD56B27A-5D4E-486F-A488-CE40F3692A46::net9.0::MeuBarbeiro.UnitTests.Domain.Entities.BarbershopTests&lt;/TestId&gt;
+  &lt;/TestAncestor&gt;
 &lt;/SessionState&gt;</s:String>
 	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=fb3b0220_002Df4ee_002D456f_002Db055_002D2c9341c89013/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="CreateAppointment_DeveCriarUmAgendamento_QuandoRequestForValido" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
   &lt;Project Location="/Users/matheusfernandes/Documents/MeuBarbeiro" Presentation="&amp;lt;backend&amp;gt;\&amp;lt;tests&amp;gt;" /&gt;

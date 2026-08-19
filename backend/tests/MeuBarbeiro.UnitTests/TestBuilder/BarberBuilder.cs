@@ -5,7 +5,6 @@ namespace MeuBarbeiro.UnitTests.TestBuilder;
 public class BarberBuilder
 {
     private Guid _userId = Guid.NewGuid();
-    private Guid _barbershopId = Guid.NewGuid();
 
     public BarberBuilder WithUserId(Guid userId)
     {
@@ -13,17 +12,10 @@ public class BarberBuilder
         return this;
     }
 
-    public BarberBuilder WithBarbershopId(Guid barbershopId)
-    {
-        _barbershopId = barbershopId;
-        return this;
-    }
-
     public Barber Build()
     {
         var barber = new Barber(
-            userId: _userId,
-            barbershopId: _barbershopId
+            userId: _userId
         );
 
         return barber;

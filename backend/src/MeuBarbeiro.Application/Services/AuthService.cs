@@ -41,7 +41,7 @@ public class AuthService(IUserRepository userRepository, IClientRepository clien
         var user = new User(request.Name, request.Email, passwordHash, UserRole.Barber);
         await userRepository.AddAsync(user, cancellationToken);
         
-        var barber = new Barber(user.Id, request.BarbershopId);
+        var barber = new Barber(user.Id);
         await barberRepository.AddAsync(barber, cancellationToken);
         
         var token = jwtTokenService.GenerateToken(user);

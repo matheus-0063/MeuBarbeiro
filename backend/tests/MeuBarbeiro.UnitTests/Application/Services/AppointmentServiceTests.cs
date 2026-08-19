@@ -61,7 +61,6 @@ public class AppointmentServiceTests
             .Build();
 
         var barber = new BarberBuilder()
-            .WithBarbershopId(barbershop.Id)
             .WithUserId(Guid.NewGuid())
             .Build();
 
@@ -86,8 +85,8 @@ public class AppointmentServiceTests
         var listServiceOffering = new List<ServiceOffering> { corte, barba, };
         var request = CreateAppointmentRequestDto(barbershop, listServiceOffering);
 
-        _mockBarberRepository.Setup(x => x.GetByBarbershopIdAsync(request.BarbershopId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(barber);
+        _mockBarberRepository.Setup(x => x.ListByBarbershopAsync(request.BarbershopId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
 
         _mockServiceOfferingRepository.Setup(x => x.ListByIdsAsync(request.ServiceIds, It.IsAny<CancellationToken>()))
             .ReturnsAsync(listServiceOffering);
@@ -108,7 +107,7 @@ public class AppointmentServiceTests
         result.IsValid.Should().BeTrue();
         result.Data.Should().NotBeEmpty();
         
-        _mockBarberRepository.Verify(x => x.GetByBarbershopIdAsync(request.BarbershopId, It.IsAny<CancellationToken>()), Times.Once);
+        _mockBarberRepository.Verify(x => x.ListByBarbershopAsync(request.BarbershopId, It.IsAny<CancellationToken>()), Times.Once);
         _mockServiceOfferingRepository.Verify(x => x.ListByIdsAsync(request.ServiceIds, It.IsAny<CancellationToken>()), Times.Once);
         _mockAppointmentRepository.Verify(
             x => x.AddAsync(

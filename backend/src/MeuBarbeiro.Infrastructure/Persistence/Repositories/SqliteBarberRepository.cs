@@ -13,12 +13,6 @@ public class SqliteBarberRepository(AppDbContext dbContext) : IBarberRepository
             .FirstOrDefaultAsync(barber => barber.Id == barberId, cancellationToken);
     }
 
-    public async Task<Barber?> GetByBarbershopIdAsync(Guid barbershopId, CancellationToken cancellationToken = default)
-    {
-        return await dbContext.Barbers
-            .FirstOrDefaultAsync(barber => barber.BarbershopId == barbershopId, cancellationToken);
-    }
-
     public async Task<Barber?> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         return await dbContext.Barbers

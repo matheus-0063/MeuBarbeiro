@@ -35,11 +35,11 @@ public class AppointmentService(
             return ServiceResult<Guid>.Failure(validationResult);
         }
 
-        var barber = await barberRepository.GetByBarbershopIdAsync(request.BarbershopId, cancellationToken);
-        if (barber is null)
+        var barber = await barberRepository.ListByBarbershopAsync(request.BarbershopId, cancellationToken);
+        if (barber.Count == 0)
         {
             validationResult.Errors.Add(new ValidationFailure(nameof(request.BarbershopId),
-                "Nao existe barbeiro vinculado a barbearia selecionada."));
+                "Nao existe barbeiros vinculados a barbearia selecionada."));
             return ServiceResult<Guid>.Failure(validationResult);
         }
 
@@ -54,7 +54,7 @@ public class AppointmentService(
 
         var totalPrice = selectedServices.Sum(service => service.Price);
 
-        var appointment = request.ToEntity(clientId, barber.Id, totalPrice);
+        var appointment = request.ToEntity(clientId, barber.First().Id, totalPrice);
         validationResult = await appointmentRepository.AddAsync(appointment, cancellationToken);
 
         if (!validationResult.IsValid) return ServiceResult<Guid>.Failure(validationResult);
