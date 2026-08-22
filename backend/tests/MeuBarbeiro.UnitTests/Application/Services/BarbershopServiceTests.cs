@@ -82,6 +82,7 @@ public class BarbershopServiceTests
         var request = CreateBarbershopRequestDto();
         
         var barbershop = new BarbershopBuilder()
+            .WithOwnerUserId(Guid.NewGuid())
             .WithName("Barbearia Antiga")
             .WithCity("Betim")
             .WithAddress("Rua Padre Lage, 59")
@@ -128,8 +129,11 @@ public class BarbershopServiceTests
     {
         // Arrange
         var request = CreateBarbershopRequestDto();
+        
         var validationResult = new ValidationResult([new ValidationFailure(nameof(Barbershop.Name), "Nome da barbearia deve ser informado")]);
+        
         var barbershop = new BarbershopBuilder()
+            .WithOwnerUserId(Guid.NewGuid())
             .WithName("Barbearia Antiga")
             .WithCity("Betim")
             .WithAddress("Rua Padre Lage, 59")
@@ -236,6 +240,7 @@ public class BarbershopServiceTests
         var barbershopId = Guid.NewGuid();
 
         var barbershop = new BarbershopBuilder()
+            .WithOwnerUserId(Guid.NewGuid())
             .WithName("Barbearia Antiga")
             .WithCity("Betim")
             .WithAddress("Rua Padre Lage, 59")
@@ -307,7 +312,9 @@ public class BarbershopServiceTests
     {
         // Arrange
         var cidade = "Betim";
+        
         var barbershop = new BarbershopBuilder()
+            .WithOwnerUserId(Guid.NewGuid())
             .WithName("Barbearia Antiga")
             .WithCity("Betim")
             .WithAddress("Rua Padre Lage, 59")
@@ -368,6 +375,7 @@ public class BarbershopServiceTests
     {
         return new CreateBarbershopRequestDto
         {
+            OwnerUserId = Guid.NewGuid(),
             Name = "Barbearia BH",
             City = "Belo Horizonte",
             Address = "R. Ilacir Pereira Lima, 539 - Silveira, Belo Horizonte - MG, 31140-540",

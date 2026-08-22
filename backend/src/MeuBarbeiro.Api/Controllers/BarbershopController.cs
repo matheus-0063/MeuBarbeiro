@@ -14,6 +14,18 @@ public class BarbershopController(
     IBarbershopService barbershopService,
     IBarberRepository barberRepository) : BaseController
 {
+    [HttpPost("barbershop")]
+    [Authorize(Roles = "BarbershopOwner")]
+    public async Task<IActionResult> CreateBarbershop(CreateBarbershopRequestDto request,
+        CancellationToken cancellationToken = default)
+    {
+        if (!TryGetAuthenticatedUserId(out var userId)) return Unauthorized();
+        
+        var result = await barbershopService.CreateBarbershop(request, userId, cancellationToken);
+        
+        return Ok(result.Data);
+    }
+    
     [HttpGet]
     [ProducesResponseType<IEnumerable<BarbershopResponseDto>>(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetBarbershops([FromQuery] string? city = null, CancellationToken cancellationToken = default)

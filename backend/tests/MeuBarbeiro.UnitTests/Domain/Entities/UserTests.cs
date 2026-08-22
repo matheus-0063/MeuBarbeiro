@@ -31,6 +31,18 @@ public class UserTests
     }
 
     [Fact]
+    public void User_DeveSerCriadoComRoleBarbershopOwner_QuandoForBarbeshopOwner()
+    {
+        // Arrange
+        var user = new UserBuilder()
+            .WithRole(UserRole.BarbershopOwner)
+            .Build();
+        
+        // Assert
+        user.Role.Should().Be(UserRole.BarbershopOwner);
+    }
+
+    [Fact]
     public void User_DeveGerarId_QuandoForCriado()
     {
         // Act

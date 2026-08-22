@@ -26,6 +26,7 @@ public class ServicesServiceTests
         // Arrange 
         var request = CreateAddServicesRequestDto();
         var barbershop = new BarbershopBuilder()
+            .WithOwnerUserId(Guid.NewGuid())
             .Build();
         
         ServiceOffering? serviceOfferingAdded = null;
@@ -85,7 +86,9 @@ public class ServicesServiceTests
     {
         // Arrange 
         var request = CreateAddServicesRequestDto();
+        
         var barbershop = new BarbershopBuilder()
+            .WithOwnerUserId(Guid.NewGuid())
             .Build();
         
         var validationResult = new ValidationResult([new ValidationFailure(nameof(ServiceOffering.Name), "Nome do serviço deve ser informado")]);
@@ -124,6 +127,7 @@ public class ServicesServiceTests
     {
         // Arrange
         var barbershop = new BarbershopBuilder()
+            .WithOwnerUserId(Guid.NewGuid())
             .Build();
 
         var serviceOffering = new ServiceOfferingBuilder()
@@ -167,6 +171,7 @@ public class ServicesServiceTests
     {
         // Arrange 
         var barbershop = new BarbershopBuilder()
+            .WithOwnerUserId(Guid.NewGuid())
             .Build();
         
         _barbershopRepositoryMock

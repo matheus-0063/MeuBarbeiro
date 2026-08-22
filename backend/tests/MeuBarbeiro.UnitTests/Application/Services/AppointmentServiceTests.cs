@@ -55,6 +55,7 @@ public class AppointmentServiceTests
             .Build();
 
         var barbershop = new BarbershopBuilder()
+            .WithOwnerUserId(Guid.NewGuid())
             .WithName("Barbershop")
             .WithAddress("Rua Padre Lage, 59")
             .WithCity("Betim")

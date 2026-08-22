@@ -1,44 +1,119 @@
 using MeuBarbeiro.Application.Abstractions.Persistence;
 using MeuBarbeiro.Application.Abstractions.Services;
+using MeuBarbeiro.Application.DTOs.Barbers;
 using MeuBarbeiro.Application.DTOs.Barbershop;
 using MeuBarbeiro.Application.DTOs.Shared;
+using MeuBarbeiro.Application.Mappings.Barbers;
 using MeuBarbeiro.Application.Mappings.Barbershops;
 
 namespace MeuBarbeiro.Application.Services;
 
-public class BarbershopService(IBarbershopRepository barbershopRepository) : IBarbershopService
+public class BarbershopService(
+    IBarbershopRepository barbershopRepository,
+    IBarberRepository barberRepository,
+    IUserRepository userRepository)
+    : IBarbershopService
 {
-    public async Task<ServiceResult<BarbershopResponseDto>> SaveBarbershop(Guid? barbershopId, CreateBarbershopRequestDto request, CancellationToken cancellationToken = default)
+    public async Task<ServiceResult<BarbershopResponseDto>> CreateBarbershop(CreateBarbershopRequestDto request,
+        Guid barbershopOwnerId,
+        CancellationToken cancellationToken = default)
     {
-        if (barbershopId.HasValue)
-        {
-            var existingBarbershop = await barbershopRepository.GetByIdAsync(barbershopId.Value, cancellationToken);
-            if (existingBarbershop is not null)
-            {
-                existingBarbershop.UpdateDetails(request.Name, request.City, request.Address, request.Description);
-                var updateValidationResult = await barbershopRepository.UpdateAsync(existingBarbershop, cancellationToken);
-
-                if (!updateValidationResult.IsValid)
-                {
-                    return ServiceResult<BarbershopResponseDto>.Failure(updateValidationResult);
-                }
-
-                return ServiceResult<BarbershopResponseDto>.Success(existingBarbershop.ToResponseDto());
-            }
-        }
-
         var barbershop = request.ToEntity();
-        var validationResult = await barbershopRepository.AddAsync(barbershop, cancellationToken);
+        var result = await barbershopRepository.AddAsync(barbershop, cancellationToken);
 
-        if (!validationResult.IsValid)
-        {
-            return ServiceResult<BarbershopResponseDto>.Failure(validationResult);
-        }
-
-        return ServiceResult<BarbershopResponseDto>.Success(barbershop.ToResponseDto());
+        return !result.IsValid
+            ? ServiceResult<BarbershopResponseDto>.Failure(result)
+            : ServiceResult<BarbershopResponseDto>.Success(barbershop.ToResponseDto());
     }
 
-    public async Task<ServiceResult<BarbershopResponseDto>> GetBarbershop(Guid id, CancellationToken cancellationToken = default)
+    public async Task<ServiceResult> UpdateBarbershop(UpdateBarbershopRequestDto request, Guid barbershopId,
+        Guid barbershopOwnerId,
+        CancellationToken cancellationToken = default)
+    {
+        var barbershop = await barbershopRepository.GetByIdAsync(barbershopId, cancellationToken);
+
+        if (barbershop == null) return ServiceResult.NotFound();
+        if (barbershop.OwnerUserId != barbershopOwnerId) return ServiceResult.Forbidden();
+
+        barbershop.UpdateDetails(request.Name, request.City, request.Address, request.Description);
+        var result = await barbershopRepository.UpdateAsync(barbershop, cancellationToken);
+
+        return !result.IsValid
+            ? ServiceResult.Failure(result)
+            : ServiceResult.Success();
+    }
+
+    public async Task<ServiceResult> LinkBaberToTheBarbershop(Guid barbershopId, Guid barberId, Guid barbershopOwnerId,
+        CancellationToken cancellationToken = default)
+    {
+        var barbershop = await barbershopRepository.GetByIdAsync(barbershopId, cancellationToken);
+
+        if (barbershop == null) return ServiceResult.NotFound();
+        if (barbershop.OwnerUserId != barbershopOwnerId) return ServiceResult.Forbidden();
+
+        var barber = await barberRepository.GetByIdAsync(barberId, cancellationToken);
+        if (barber == null) return ServiceResult.NotFound();
+
+        barber.AssignBarbershop(barbershopId);
+
+        var result = await barberRepository.UpdateAsync(barber, cancellationToken);
+
+        return !result.IsValid
+            ? ServiceResult.Failure(result)
+            : ServiceResult.Success();
+    }
+
+    public async Task<ServiceResult> RemoveBarberToBarbershop(Guid barbershopId, Guid barberId, Guid barbershopOwnerId,
+        CancellationToken cancellationToken = default)
+    {
+        var barbershop = await barbershopRepository.GetByIdAsync(barbershopId, cancellationToken);
+
+        if (barbershop == null) return ServiceResult.NotFound();
+        if (barbershop.OwnerUserId != barbershopOwnerId) return ServiceResult.Forbidden();
+
+        var barber = await barberRepository.GetByIdAsync(barberId, cancellationToken);
+        if (barber == null) return ServiceResult.NotFound();
+
+        barber.RemoveFromBarbershop(barbershopId);
+
+        var result = await barberRepository.UpdateAsync(barber, cancellationToken);
+
+        return !result.IsValid
+            ? ServiceResult.Failure(result)
+            : ServiceResult.Success();
+    }
+
+    // Entender melhor
+    public async Task<ServiceResult<IEnumerable<BarberResponseDto>>> ListBarbersToBarbershop(Guid barbershopId,
+        CancellationToken cancellationToken = default)
+    {
+        var barbershop = await barbershopRepository.GetByIdAsync(barbershopId, cancellationToken);
+        if (barbershop == null) return ServiceResult<IEnumerable<BarberResponseDto>>.NotFound();
+
+        var barbers = await barberRepository.ListByBarbershopAsync(barbershopId, cancellationToken);
+        if (!barbers.Any()) return ServiceResult<IEnumerable<BarberResponseDto>>.NotFound();
+
+        var userIds = barbers.Select(b => b.UserId).Distinct();
+
+        var users = await userRepository.ListByIdsAsync(userIds, cancellationToken);
+        if (!users.Any()) return ServiceResult<IEnumerable<BarberResponseDto>>.NotFound();
+
+        var usersById = users.ToDictionary(
+            user => user.Id,
+            user => user
+        );
+
+        var response = barbers.Select(barber =>
+        {
+            var user = usersById[barber.UserId];
+            return barber.ToDto(user.Name);
+        }).ToList();
+        
+        return ServiceResult<IEnumerable<BarberResponseDto>>.Success(response);
+    }
+
+    public async Task<ServiceResult<BarbershopResponseDto>> GetBarbershop(Guid id,
+        CancellationToken cancellationToken = default)
     {
         var barbershop = await barbershopRepository.GetByIdAsync(id, cancellationToken);
 
@@ -47,7 +122,8 @@ public class BarbershopService(IBarbershopRepository barbershopRepository) : IBa
             : ServiceResult<BarbershopResponseDto>.Success(barbershop.ToResponseDto());
     }
 
-    public async Task<ServiceResult<IEnumerable<BarbershopResponseDto>>> GetBarbershops(string? city = null, CancellationToken cancellationToken = default)
+    public async Task<ServiceResult<IEnumerable<BarbershopResponseDto>>> GetBarbershops(string? city = null,
+        CancellationToken cancellationToken = default)
     {
         var barbershops = await barbershopRepository.ListAsync(city, cancellationToken);
         var response = barbershops.Select(barbershop => barbershop.ToResponseDto());
