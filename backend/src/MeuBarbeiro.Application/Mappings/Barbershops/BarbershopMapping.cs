@@ -5,9 +5,9 @@ namespace MeuBarbeiro.Application.Mappings.Barbershops;
 
 public static class BarbershopMapping
 {
-    public static Barbershop ToEntity(this CreateBarbershopRequestDto request) => new Barbershop
+    public static Barbershop ToEntity(this CreateBarbershopRequestDto request, Guid ownerUserId) => new Barbershop
     (
-        ownerUserId: request.OwnerUserId,
+        ownerUserId: ownerUserId,
         name: request.Name,
         city: request.City,
         address: request.Address,

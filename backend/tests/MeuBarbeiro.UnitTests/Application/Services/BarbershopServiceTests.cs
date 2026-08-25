@@ -190,7 +190,6 @@ public class BarbershopServiceTests
     {
         return new CreateBarbershopRequestDto
         {
-            OwnerUserId = Guid.NewGuid(),
             Name = "Barbearia BH",
             City = "Belo Horizonte",
             Address = "R. Ilacir Pereira Lima, 539 - Silveira, Belo Horizonte - MG, 31140-540",

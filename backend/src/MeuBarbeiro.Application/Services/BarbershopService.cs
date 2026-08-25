@@ -18,7 +18,7 @@ public class BarbershopService(
         Guid barbershopOwnerId,
         CancellationToken cancellationToken = default)
     {
-        var barbershop = request.ToEntity();
+        var barbershop = request.ToEntity(barbershopOwnerId);
         await barbershopRepository.AddAsync(barbershop, cancellationToken);
 
         return ServiceResult<BarbershopResponseDto>.Success(barbershop.ToResponseDto());
@@ -34,7 +34,7 @@ public class BarbershopService(
         if (barbershop.OwnerUserId != barbershopOwnerId) return ServiceResult.Forbidden();
 
         barbershop.UpdateDetails(request.Name, request.City, request.Address, request.Description);
-        
+
         await barbershopRepository.UpdateAsync(barbershop, cancellationToken);
         return ServiceResult.Success();
     }
@@ -73,6 +73,16 @@ public class BarbershopService(
         return ServiceResult.Success();
     }
 
+    public async Task<ServiceResult<IEnumerable<BarbershopResponseDto>>> ListBarbershopsToOwner(Guid ownerId,
+        CancellationToken cancellationToken = default)
+    {
+        var barbershops = await barbershopRepository.GetByBarbershopOwnerIdAsync(ownerId, cancellationToken);
+        if (barbershops == null) return ServiceResult<IEnumerable<BarbershopResponseDto>>.NotFound();
+        
+        var response = barbershops.Select(b => b.ToResponseDto());
+        return ServiceResult<IEnumerable<BarbershopResponseDto>>.Success(response);
+    }
+
     // Entender melhor
     public async Task<ServiceResult<IEnumerable<BarberResponseDto>>> ListBarbersToBarbershop(Guid barbershopId,
         CancellationToken cancellationToken = default)
@@ -98,7 +108,7 @@ public class BarbershopService(
             var user = usersById[barber.UserId];
             return barber.ToDto(user.Name);
         }).ToList();
-        
+
         return ServiceResult<IEnumerable<BarberResponseDto>>.Success(response);
     }
 

@@ -29,6 +29,14 @@ public class AuthController(IAuthService authService) : BaseController
     }
 
     [AllowAnonymous]
+    [HttpPost("register/barbershop-owner")]
+    public async Task<IActionResult> RegisterBarbershopOwner(RegisterBarbershopOwnerRequest request)
+    {
+        var result = await authService.RegisterBarbeshopOwnerAsync(request);
+        return Ok(result);
+    }
+
+    [AllowAnonymous]
     [HttpPost("login")]
     public async Task<IActionResult> Login(LoginRequest request)
     {
