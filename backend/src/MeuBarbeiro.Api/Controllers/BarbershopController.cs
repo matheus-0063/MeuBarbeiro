@@ -1,5 +1,4 @@
 using Asp.Versioning;
-using MeuBarbeiro.Api.Models.Responses;
 using MeuBarbeiro.Application.Abstractions.Persistence;
 using MeuBarbeiro.Application.Abstractions.Services;
 using MeuBarbeiro.Application.DTOs.Barbershop;
@@ -31,45 +30,6 @@ public class BarbershopController(
     public async Task<IActionResult> GetBarbershops([FromQuery] string? city = null, CancellationToken cancellationToken = default)
     {
         var result = await barbershopService.GetBarbershops(city, cancellationToken);
-        return Ok(result.Data);
-    }
-
-    [HttpPut("me")]
-    [Authorize(Roles = "Barber")]
-    [ProducesResponseType<BarbershopResponseDto>(StatusCodes.Status200OK)]
-    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> SaveMyBarbershop([FromBody] CreateBarbershopRequestDto request, CancellationToken cancellationToken)
-    {
-        if (!TryGetAuthenticatedUserId(out var userId))
-        {
-            return Unauthorized();
-        }
-
-        var barber = await barberRepository.GetByUserIdAsync(userId, cancellationToken);
-        if (barber is null)
-        {
-            return NotFound(new ProblemDetails
-            {
-                Title = "Perfil de barbeiro não encontrado."
-            });
-        }
-
-        var result = await barbershopService.SaveBarbershop(barber.BarbershopId, request, cancellationToken);
-        
-        if (ResponseHasErros(result.ValidationResult)) return ValidationProblem();
-
-        if (barber.BarbershopId != result.Data!.Id)
-        {
-            barber.AssignBarbershop(result.Data.Id);
-            var updateResult = await barberRepository.UpdateAsync(barber, cancellationToken);
-            if (ResponseHasErros(updateResult))
-            {
-                return ValidationProblem();
-            }
-        }
-
         return Ok(result.Data);
     }
 

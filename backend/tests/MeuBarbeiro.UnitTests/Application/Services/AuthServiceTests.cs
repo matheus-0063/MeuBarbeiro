@@ -134,16 +134,18 @@ public class AuthServiceTests
 
         const string expectedToken = "token";
         
-        _userRepositoryMock.Setup(x => x.GetByEmailAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+        _userRepositoryMock
+            .Setup(x => x.GetByEmailAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((User?)null);
         
-        _userRepositoryMock.Setup(x => x.AddAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
+        _userRepositoryMock
+            .Setup(x => x.AddAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
             .Callback((User user, CancellationToken _) => userAdded = user)
             .ReturnsAsync(new ValidationResult());
         
-        _barberRepositoryMock.Setup(x => x.AddAsync(It.IsAny<Barber>(), It.IsAny<CancellationToken>()))
-            .Callback((Barber barber, CancellationToken _) => barberAdded = barber)
-            .ReturnsAsync(new ValidationResult());
+        _barberRepositoryMock
+            .Setup(x => x.AddAsync(It.IsAny<Barber>(), It.IsAny<CancellationToken>()))
+            .Callback((Barber barber, CancellationToken _) => barberAdded = barber);
 
         _jwtTokenServiceMock
             .Setup(x => x.GenerateToken(It.IsAny<User>()))
@@ -164,7 +166,6 @@ public class AuthServiceTests
         result.Role.Should().Be(userAdded.Role.ToString());
         
         barberAdded.UserId.Should().Be(userAdded.Id);
-        barberAdded.BarbershopId.Should().Be(request.BarbershopId);
         
         _userRepositoryMock.Verify(x => x.GetByEmailAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
         _userRepositoryMock.Verify(x => x.AddAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()), Times.Once);
@@ -302,8 +303,7 @@ public class AuthServiceTests
         {
             Email = "matheus@gmail.com",
             Password = "123456",
-            Name = "Matheus",
-            BarbershopId = Guid.NewGuid()
+            Name = "Matheus"
         };
     }
 

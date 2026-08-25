@@ -19,11 +19,9 @@ public class BarbershopService(
         CancellationToken cancellationToken = default)
     {
         var barbershop = request.ToEntity();
-        var result = await barbershopRepository.AddAsync(barbershop, cancellationToken);
+        await barbershopRepository.AddAsync(barbershop, cancellationToken);
 
-        return !result.IsValid
-            ? ServiceResult<BarbershopResponseDto>.Failure(result)
-            : ServiceResult<BarbershopResponseDto>.Success(barbershop.ToResponseDto());
+        return ServiceResult<BarbershopResponseDto>.Success(barbershop.ToResponseDto());
     }
 
     public async Task<ServiceResult> UpdateBarbershop(UpdateBarbershopRequestDto request, Guid barbershopId,
@@ -36,11 +34,9 @@ public class BarbershopService(
         if (barbershop.OwnerUserId != barbershopOwnerId) return ServiceResult.Forbidden();
 
         barbershop.UpdateDetails(request.Name, request.City, request.Address, request.Description);
-        var result = await barbershopRepository.UpdateAsync(barbershop, cancellationToken);
-
-        return !result.IsValid
-            ? ServiceResult.Failure(result)
-            : ServiceResult.Success();
+        
+        await barbershopRepository.UpdateAsync(barbershop, cancellationToken);
+        return ServiceResult.Success();
     }
 
     public async Task<ServiceResult> LinkBaberToTheBarbershop(Guid barbershopId, Guid barberId, Guid barbershopOwnerId,
@@ -56,11 +52,8 @@ public class BarbershopService(
 
         barber.AssignBarbershop(barbershopId);
 
-        var result = await barberRepository.UpdateAsync(barber, cancellationToken);
-
-        return !result.IsValid
-            ? ServiceResult.Failure(result)
-            : ServiceResult.Success();
+        await barberRepository.UpdateAsync(barber, cancellationToken);
+        return ServiceResult.Success();
     }
 
     public async Task<ServiceResult> RemoveBarberToBarbershop(Guid barbershopId, Guid barberId, Guid barbershopOwnerId,
@@ -76,11 +69,8 @@ public class BarbershopService(
 
         barber.RemoveFromBarbershop(barbershopId);
 
-        var result = await barberRepository.UpdateAsync(barber, cancellationToken);
-
-        return !result.IsValid
-            ? ServiceResult.Failure(result)
-            : ServiceResult.Success();
+        await barberRepository.UpdateAsync(barber, cancellationToken);
+        return ServiceResult.Success();
     }
 
     // Entender melhor

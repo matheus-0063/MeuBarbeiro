@@ -27,7 +27,6 @@ public class AppointmentService(
         CancellationToken cancellationToken = default)
     {
         var validationResult = new ValidationResult();
-
         if (request.ServiceIds.Count == 0)
         {
             validationResult.Errors.Add(new ValidationFailure(nameof(request.ServiceIds),
@@ -53,11 +52,9 @@ public class AppointmentService(
         }
 
         var totalPrice = selectedServices.Sum(service => service.Price);
-
         var appointment = request.ToEntity(clientId, barber.First().Id, totalPrice);
-        validationResult = await appointmentRepository.AddAsync(appointment, cancellationToken);
-
-        if (!validationResult.IsValid) return ServiceResult<Guid>.Failure(validationResult);
+        
+        await appointmentRepository.AddAsync(appointment, cancellationToken);
 
         var selections = request.ServiceIds
             .Distinct()
@@ -210,36 +207,11 @@ public class AppointmentService(
         return ServiceResult<IEnumerable<AppointmentResponseDto>>.Success(response);
     }
 
-    public async Task<ServiceResult> UpdateStatusAppointment(UpdateAppointmentStatusRequestDto request)
-    {
-        var appointment = await appointmentRepository.GetByIdAsync(request.AppointmentId);
-        if (appointment == null)
-        {
-            return ServiceResult<bool>.NotFound();
-        }
-
-        //appointment.SetStatus(request.Status);
-
-        var validationResult = await appointmentRepository.UpdateAsync(appointment);
-
-        if (!validationResult.IsValid)
-        {
-            return ServiceResult<bool>.Failure(validationResult);
-        }
-
-        await eventPublisher.PublishAsync(new AppointmentStatusUpdatedIntegrationEvent(
-            appointment.Id,
-            appointment.BarberId,
-            appointment.Status.ToString(),
-            DateTime.UtcNow));
-
-        return ServiceResult<bool>.Success(true);
-    }
-
-    public async Task<ServiceResult> AcceptAppointment(Guid appointmentId, Guid userId, CancellationToken cancellationToken = default)
+    public async Task<ServiceResult> AcceptAppointment(Guid appointmentId, Guid userId,
+        CancellationToken cancellationToken = default)
     {
         var validationResult = new ValidationResult();
-        
+
         var appointment = await appointmentRepository.GetByIdAsync(appointmentId, cancellationToken);
         if (appointment == null) return ServiceResult.NotFound();
 
@@ -256,13 +228,12 @@ public class AppointmentService(
         }
         catch (AppointmentStatusTransitionException ex)
         {
-            validationResult.Errors.Add(new ValidationFailure(nameof(Appointment.Status), "Somente agendamentos pendentes podem ser aceitos."));
+            validationResult.Errors.Add(new ValidationFailure(nameof(Appointment.Status),
+                "Somente agendamentos pendentes podem ser aceitos."));
             return ServiceResult.Failure(validationResult);
         }
 
-        validationResult = await appointmentRepository.UpdateAsync(appointment, cancellationToken);
-        if (!validationResult.IsValid) return ServiceResult.Failure(validationResult);
-        
+        await appointmentRepository.UpdateAsync(appointment, cancellationToken);
         await eventPublisher.PublishAsync(new AppointmentStatusUpdatedIntegrationEvent(appointment.Id,
             appointment.BarberId, appointment.Status.ToString(), DateTime.UtcNow), cancellationToken);
 

@@ -26,19 +26,15 @@ public class SqliteBarberRepository(AppDbContext dbContext) : IBarberRepository
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<ValidationResult> AddAsync(Barber barber, CancellationToken cancellationToken = default)
+    public async Task AddAsync(Barber barber, CancellationToken cancellationToken = default)
     {
         dbContext.Barbers.Add(barber);
         await dbContext.SaveChangesAsync(cancellationToken);
-
-        return new ValidationResult();
     }
 
-    public async Task<ValidationResult> UpdateAsync(Barber barber, CancellationToken cancellationToken = default)
+    public async Task UpdateAsync(Barber barber, CancellationToken cancellationToken = default)
     {
         dbContext.Barbers.Update(barber);
         await dbContext.SaveChangesAsync(cancellationToken);
-
-        return new ValidationResult();
     }
 }

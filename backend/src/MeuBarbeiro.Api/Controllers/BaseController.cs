@@ -7,7 +7,7 @@ namespace MeuBarbeiro.Api.Controllers;
 [ApiController]
 public abstract class BaseController : ControllerBase
 {
-    protected const string DefaultErrorMessages = "ErrorMessages";
+    private const string DefaultErrorMessages = "ErrorMessages";
 
     protected bool ResponseHasErros(ValidationResult result)
     {
@@ -15,7 +15,11 @@ public abstract class BaseController : ControllerBase
 
         foreach (var error in result.Errors)
         {
-            ModelState.AddModelError(DefaultErrorMessages, error.ErrorMessage);
+            var fieldName = string.IsNullOrWhiteSpace(error.PropertyName)
+                ? DefaultErrorMessages
+                : error.PropertyName;
+
+            ModelState.AddModelError(fieldName, error.ErrorMessage);
         }
 
         return true;

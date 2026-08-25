@@ -10,6 +10,5 @@ public interface IAppointmentService
     Task<ServiceResult<AppointmentReviewResponseDto>> CreateReview(Guid appointmentId, Guid clientId, CreateAppointmentReviewRequestDto request, CancellationToken cancellationToken = default);
     Task<ServiceResult<AppointmentResponseDto>> GetAppointmentAsync(Guid id);
     Task<ServiceResult<IEnumerable<AppointmentResponseDto>>> GetListAppointments(Guid userId, AppointmentUserType userType, AppointmentStatus? status = null, CancellationToken cancellationToken = default);
-    Task<ServiceResult> UpdateStatusAppointment(UpdateAppointmentStatusRequestDto request);
     Task<ServiceResult> AcceptAppointment(Guid appointmentId, Guid userId, CancellationToken cancellationToken = default);
 }

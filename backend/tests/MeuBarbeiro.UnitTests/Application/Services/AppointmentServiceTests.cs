@@ -80,32 +80,37 @@ public class AppointmentServiceTests
             .WithDurationMinutes(20)
             .WithBarbershopId(barbershop.Id)
             .Build();
-
         #endregion
+        
+        IReadOnlyCollection<Barber> barbers = [barber];
 
         var listServiceOffering = new List<ServiceOffering> { corte, barba, };
         var request = CreateAppointmentRequestDto(barbershop, listServiceOffering);
 
-        _mockBarberRepository.Setup(x => x.ListByBarbershopAsync(request.BarbershopId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync([]);
+        _mockBarberRepository
+            .Setup(x => x.ListByBarbershopAsync(request.BarbershopId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(barbers);
 
-        _mockServiceOfferingRepository.Setup(x => x.ListByIdsAsync(request.ServiceIds, It.IsAny<CancellationToken>()))
+        _mockServiceOfferingRepository
+            .Setup(x => x.ListByIdsAsync(request.ServiceIds, It.IsAny<CancellationToken>()))
             .ReturnsAsync(listServiceOffering);
 
-        _mockAppointmentRepository.Setup(x => x.AddAsync(It.IsAny<Appointment>(), It.IsAny<CancellationToken>()))
+        _mockAppointmentRepository
+            .Setup(x => x.AddAsync(It.IsAny<Appointment>(), It.IsAny<CancellationToken>()));
+
+        _mockSelectionRepository
+            .Setup(x => x.AddRangeAsync(It.IsAny<IEnumerable<AppointmentServiceSelection>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ValidationResult());
 
-        _mockSelectionRepository.Setup(x => x.AddRangeAsync(It.IsAny<IEnumerable<AppointmentServiceSelection>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ValidationResult());
-
-        _mockEventPublisher.Setup(x => x.PublishAsync(It.IsAny<AppointmentRequestedIntegrationEvent>(), It.IsAny<CancellationToken>()))
+        _mockEventPublisher
+            .Setup(x => x.PublishAsync(It.IsAny<AppointmentRequestedIntegrationEvent>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
         // Act
         var result = await _service.CreateAppointment(request, client.Id);
 
         // Assert
-        result.IsValid.Should().BeTrue();
+        result.ValidationResult.IsValid.Should().BeTrue();
         result.Data.Should().NotBeEmpty();
         
         _mockBarberRepository.Verify(x => x.ListByBarbershopAsync(request.BarbershopId, It.IsAny<CancellationToken>()), Times.Once);
