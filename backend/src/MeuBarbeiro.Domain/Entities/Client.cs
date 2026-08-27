@@ -9,7 +9,15 @@ public class Client
 
     public Client(Guid userId)
     {
+        ValidarUserId(userId);
+
         Id = Guid.NewGuid();
         UserId = userId;
     }
+    
+    private static void ValidarUserId(Guid userId)
+    {
+        if (userId == Guid.Empty) 
+            throw new ArgumentException("UserId é obrigatório", nameof(userId));
+    } 
 }

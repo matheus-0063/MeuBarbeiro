@@ -7,15 +7,26 @@ namespace MeuBarbeiro.Infrastructure.Persistence.Repositories;
 
 public class SqliteServiceOfferingRepository(AppDbContext dbContext) : IServiceOfferingRepository
 {
-    public async Task<ValidationResult> AddAsync(ServiceOffering serviceOffering, CancellationToken cancellationToken = default)
+    public async Task<ServiceOffering?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        return await dbContext.ServiceOfferings
+            .FirstOrDefaultAsync(s => s.Id == id, cancellationToken);
+    }
+
+    public async Task AddAsync(ServiceOffering serviceOffering, CancellationToken cancellationToken = default)
     {
         dbContext.ServiceOfferings.Add(serviceOffering);
         await dbContext.SaveChangesAsync(cancellationToken);
-
-        return new ValidationResult();
     }
 
-    public async Task<IReadOnlyCollection<ServiceOffering>> ListByIdsAsync(IEnumerable<Guid> serviceOfferingIds, CancellationToken cancellationToken = default)
+    public async Task UpdateAsync(ServiceOffering serviceOffering, CancellationToken cancellationToken = default)
+    {
+        dbContext.ServiceOfferings.Update(serviceOffering);
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyCollection<ServiceOffering>> ListByIdsAsync(IEnumerable<Guid> serviceOfferingIds,
+        CancellationToken cancellationToken = default)
     {
         var ids = serviceOfferingIds.Distinct().ToArray();
 
@@ -24,7 +35,8 @@ public class SqliteServiceOfferingRepository(AppDbContext dbContext) : IServiceO
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<IReadOnlyCollection<ServiceOffering>> ListByBarbershopAsync(Guid barbershopId, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyCollection<ServiceOffering>> ListByBarbershopAsync(Guid barbershopId,
+        CancellationToken cancellationToken = default)
     {
         return await dbContext.ServiceOfferings
             .Where(service => service.BarbershopId == barbershopId)

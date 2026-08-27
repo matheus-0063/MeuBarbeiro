@@ -29,19 +29,14 @@ public class SqliteAppointmentRepository(AppDbContext dbContext) : IAppointmentR
             .FirstOrDefaultAsync(appointment => appointment.Id == appointmentId, cancellationToken);
     }
 
-    public async Task<ValidationResult> AddAsync(Appointment appointment, CancellationToken cancellationToken = default)
+    public async Task AddAsync(Appointment appointment, CancellationToken cancellationToken = default)
     {
         dbContext.Appointments.Add(appointment);
         await dbContext.SaveChangesAsync(cancellationToken);
-
-        return new ValidationResult();
     }
 
-    public async Task<ValidationResult> UpdateAsync(Appointment appointment, CancellationToken cancellationToken = default)
+    public async Task UpdateAsync(Appointment appointment, CancellationToken cancellationToken = default)
     {
-        dbContext.Appointments.Update(appointment);
         await dbContext.SaveChangesAsync(cancellationToken);
-
-        return new ValidationResult();
     }
 }

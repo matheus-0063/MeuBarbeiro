@@ -8,6 +8,7 @@ using MeuBarbeiro.Application.DTOs.Shared;
 using MeuBarbeiro.Application.Mappings.Appointments;
 using MeuBarbeiro.Domain.Entities;
 using MeuBarbeiro.Domain.Enums;
+using MeuBarbeiro.Domain.Exceptions;
 
 namespace MeuBarbeiro.Application.Services;
 
@@ -22,38 +23,38 @@ public class AppointmentService(
     IUserRepository userRepository,
     IEventPublisher eventPublisher) : IAppointmentService
 {
-    public async Task<ServiceResult<Guid>> CreateAppointment(CreateAppointmentRequestDto request, Guid clientId)
+    public async Task<ServiceResult<Guid>> CreateAppointment(CreateAppointmentRequestDto request, Guid clientId,
+        CancellationToken cancellationToken = default)
     {
-        var barber = await barberRepository.GetByBarbershopIdAsync(request.BarbershopId);
-        if (barber is null)
-        {
-            var barberValidationResult = new ValidationResult();
-            barberValidationResult.Errors.Add(new ValidationFailure(nameof(request.BarbershopId), "Nao existe barbeiro vinculado a barbearia selecionada."));
-            return ServiceResult<Guid>.Failure(barberValidationResult);
-        }
-
+        var validationResult = new ValidationResult();
         if (request.ServiceIds.Count == 0)
         {
-            var serviceValidationResult = new ValidationResult();
-            serviceValidationResult.Errors.Add(new ValidationFailure(nameof(request.ServiceIds), "Selecione pelo menos um servico."));
-            return ServiceResult<Guid>.Failure(serviceValidationResult);
-        }
-
-        var selectedServices = await serviceOfferingRepository.ListByIdsAsync(request.ServiceIds);
-        if (selectedServices.Count != request.ServiceIds.Distinct().Count() || selectedServices.Any(service => service.BarbershopId != request.BarbershopId))
-        {
-            var serviceValidationResult = new ValidationResult();
-            serviceValidationResult.Errors.Add(new ValidationFailure(nameof(request.ServiceIds), "Um ou mais servicos selecionados nao pertencem a barbearia."));
-            return ServiceResult<Guid>.Failure(serviceValidationResult);
-        }
-
-        var appointment = request.ToEntity(clientId, barber.Id);
-        var validationResult = await appointmentRepository.AddAsync(appointment);
-
-        if (!validationResult.IsValid)
-        {
+            validationResult.Errors.Add(new ValidationFailure(nameof(request.ServiceIds),
+                "Selecione pelo menos um servico."));
             return ServiceResult<Guid>.Failure(validationResult);
         }
+
+        var barber = await barberRepository.ListByBarbershopAsync(request.BarbershopId, cancellationToken);
+        if (barber.Count == 0)
+        {
+            validationResult.Errors.Add(new ValidationFailure(nameof(request.BarbershopId),
+                "Nao existe barbeiros vinculados a barbearia selecionada."));
+            return ServiceResult<Guid>.Failure(validationResult);
+        }
+
+        var selectedServices = await serviceOfferingRepository.ListByIdsAsync(request.ServiceIds, cancellationToken);
+        if (selectedServices.Count != request.ServiceIds.Distinct().Count() ||
+            selectedServices.Any(service => service.BarbershopId != request.BarbershopId))
+        {
+            validationResult.Errors.Add(new ValidationFailure(nameof(request.ServiceIds),
+                "Um ou mais servicos selecionados nao pertencem a barbearia."));
+            return ServiceResult<Guid>.Failure(validationResult);
+        }
+
+        var totalPrice = selectedServices.Sum(service => service.Price);
+        var appointment = request.ToEntity(clientId, barber.First().Id, totalPrice);
+        
+        await appointmentRepository.AddAsync(appointment, cancellationToken);
 
         var selections = request.ServiceIds
             .Distinct()
@@ -64,7 +65,8 @@ public class AppointmentService(
             })
             .ToArray();
 
-        var selectionValidationResult = await appointmentServiceSelectionRepository.AddRangeAsync(selections);
+        var selectionValidationResult =
+            await appointmentServiceSelectionRepository.AddRangeAsync(selections, cancellationToken);
         if (!selectionValidationResult.IsValid)
         {
             return ServiceResult<Guid>.Failure(selectionValidationResult);
@@ -76,7 +78,7 @@ public class AppointmentService(
             appointment.BarberId,
             appointment.BarbershopId,
             appointment.ScheduledAtUtc,
-            appointment.TotalPrice));
+            appointment.TotalPrice), cancellationToken);
 
         return ServiceResult<Guid>.Success(appointment.Id);
     }
@@ -96,21 +98,24 @@ public class AppointmentService(
         if (appointment.ClientId != clientId)
         {
             var validationResult = new ValidationResult();
-            validationResult.Errors.Add(new ValidationFailure(nameof(clientId), "O agendamento nao pertence ao cliente autenticado."));
+            validationResult.Errors.Add(new ValidationFailure(nameof(clientId),
+                "O agendamento nao pertence ao cliente autenticado."));
             return ServiceResult<AppointmentReviewResponseDto>.Failure(validationResult);
         }
 
         if (appointment.Status != AppointmentStatus.Completed)
         {
             var validationResult = new ValidationResult();
-            validationResult.Errors.Add(new ValidationFailure(nameof(appointment.Status), "Somente agendamentos concluidos podem ser avaliados."));
+            validationResult.Errors.Add(new ValidationFailure(nameof(appointment.Status),
+                "Somente agendamentos concluidos podem ser avaliados."));
             return ServiceResult<AppointmentReviewResponseDto>.Failure(validationResult);
         }
 
         if (request.Stars < 1 || request.Stars > 5)
         {
             var validationResult = new ValidationResult();
-            validationResult.Errors.Add(new ValidationFailure(nameof(request.Stars), "A avaliacao deve conter entre 1 e 5 estrelas."));
+            validationResult.Errors.Add(new ValidationFailure(nameof(request.Stars),
+                "A avaliacao deve conter entre 1 e 5 estrelas."));
             return ServiceResult<AppointmentReviewResponseDto>.Failure(validationResult);
         }
 
@@ -118,7 +123,8 @@ public class AppointmentService(
         if (existingReview != null)
         {
             var validationResult = new ValidationResult();
-            validationResult.Errors.Add(new ValidationFailure(nameof(appointmentId), "Este agendamento ja foi avaliado."));
+            validationResult.Errors.Add(new ValidationFailure(nameof(appointmentId),
+                "Este agendamento ja foi avaliado."));
             return ServiceResult<AppointmentReviewResponseDto>.Failure(validationResult);
         }
 
@@ -141,7 +147,8 @@ public class AppointmentService(
         var barbershop = await barbershopRepository.GetByIdAsync(appointment.BarbershopId, cancellationToken);
         if (barbershop != null)
         {
-            var averageStars = await reviewRepository.GetAverageStarsByBarbershopAsync(appointment.BarbershopId, cancellationToken);
+            var averageStars =
+                await reviewRepository.GetAverageStarsByBarbershopAsync(appointment.BarbershopId, cancellationToken);
             barbershop.UpdateAverageRating(averageStars ?? request.Stars);
             await barbershopRepository.UpdateAsync(barbershop, cancellationToken);
         }
@@ -155,7 +162,7 @@ public class AppointmentService(
         });
     }
 
-    public async Task<ServiceResult<AppointmentResponseDto>> GetAppointment(Guid id)
+    public async Task<ServiceResult<AppointmentResponseDto>> GetAppointmentAsync(Guid id)
     {
         var appointment = await appointmentRepository.GetByIdAsync(id);
         if (appointment == null)
@@ -167,7 +174,8 @@ public class AppointmentService(
         return ServiceResult<AppointmentResponseDto>.Success(response.Single());
     }
 
-    public async Task<ServiceResult<IEnumerable<AppointmentResponseDto>>> GetListAppointments(Guid userId, AppointmentUserType userType, AppointmentStatus? status = null, CancellationToken cancellationToken = default)
+    public async Task<ServiceResult<IEnumerable<AppointmentResponseDto>>> GetListAppointments(Guid userId,
+        AppointmentUserType userType, AppointmentStatus? status = null, CancellationToken cancellationToken = default)
     {
         IReadOnlyCollection<Appointment> appointments;
 
@@ -199,33 +207,41 @@ public class AppointmentService(
         return ServiceResult<IEnumerable<AppointmentResponseDto>>.Success(response);
     }
 
-    public async Task<ServiceResult<bool>> UpdateStatusAppointment(UpdateAppointmentStatusRequestDto request)
+    public async Task<ServiceResult> AcceptAppointment(Guid appointmentId, Guid userId,
+        CancellationToken cancellationToken = default)
     {
-        var appointment = await appointmentRepository.GetByIdAsync(request.AppointmentId);
-        if (appointment == null)
+        var validationResult = new ValidationResult();
+
+        var appointment = await appointmentRepository.GetByIdAsync(appointmentId, cancellationToken);
+        if (appointment == null) return ServiceResult.NotFound();
+
+        var barber = await barberRepository.GetByUserIdAsync(userId, cancellationToken);
+        if (barber == null) return ServiceResult.NotFound();
+
+        try
         {
-            return ServiceResult<bool>.NotFound();
+            appointment.Accept(barber.Id);
+        }
+        catch (AppointmentActorNotAllowedException ex)
+        {
+            return ServiceResult.Forbidden();
+        }
+        catch (AppointmentStatusTransitionException ex)
+        {
+            validationResult.Errors.Add(new ValidationFailure(nameof(Appointment.Status),
+                "Somente agendamentos pendentes podem ser aceitos."));
+            return ServiceResult.Failure(validationResult);
         }
 
-        appointment.AlterStatus(request.Status);
+        await appointmentRepository.UpdateAsync(appointment, cancellationToken);
+        await eventPublisher.PublishAsync(new AppointmentStatusUpdatedIntegrationEvent(appointment.Id,
+            appointment.BarberId, appointment.Status.ToString(), DateTime.UtcNow), cancellationToken);
 
-        var validationResult = await appointmentRepository.UpdateAsync(appointment);
-
-        if (!validationResult.IsValid)
-        {
-            return ServiceResult<bool>.Failure(validationResult);
-        }
-
-        await eventPublisher.PublishAsync(new AppointmentStatusUpdatedIntegrationEvent(
-            appointment.Id,
-            appointment.BarberId,
-            appointment.Status.ToString(),
-            DateTime.UtcNow));
-
-        return ServiceResult<bool>.Success(true);
+        return ServiceResult.Success();
     }
 
-    private async Task<IReadOnlyCollection<AppointmentResponseDto>> BuildResponseDtosAsync(IEnumerable<Appointment> appointments, CancellationToken cancellationToken = default)
+    private async Task<IReadOnlyCollection<AppointmentResponseDto>> BuildResponseDtosAsync(
+        IEnumerable<Appointment> appointments, CancellationToken cancellationToken = default)
     {
         var appointmentList = appointments.ToArray();
         if (appointmentList.Length == 0)
@@ -233,12 +249,21 @@ public class AppointmentService(
             return [];
         }
 
-        var clients = await clientRepository.ListByIdsAsync(appointmentList.Select(appointment => appointment.ClientId), cancellationToken);
+        var clients = await clientRepository.ListByIdsAsync(appointmentList.Select(appointment => appointment.ClientId),
+            cancellationToken);
         var users = await userRepository.ListByIdsAsync(clients.Select(client => client.UserId), cancellationToken);
-        var barbershops = await barbershopRepository.ListByIdsAsync(appointmentList.Select(appointment => appointment.BarbershopId), cancellationToken);
-        var reviews = await reviewRepository.ListByAppointmentIdsAsync(appointmentList.Select(appointment => appointment.Id), cancellationToken);
-        var selections = await appointmentServiceSelectionRepository.ListByAppointmentIdsAsync(appointmentList.Select(appointment => appointment.Id), cancellationToken);
-        var services = await serviceOfferingRepository.ListByIdsAsync(selections.Select(selection => selection.ServiceOfferingId), cancellationToken);
+        var barbershops =
+            await barbershopRepository.ListByIdsAsync(appointmentList.Select(appointment => appointment.BarbershopId),
+                cancellationToken);
+        var reviews =
+            await reviewRepository.ListByAppointmentIdsAsync(appointmentList.Select(appointment => appointment.Id),
+                cancellationToken);
+        var selections =
+            await appointmentServiceSelectionRepository.ListByAppointmentIdsAsync(
+                appointmentList.Select(appointment => appointment.Id), cancellationToken);
+        var services =
+            await serviceOfferingRepository.ListByIdsAsync(selections.Select(selection => selection.ServiceOfferingId),
+                cancellationToken);
 
         var clientsById = clients.ToDictionary(client => client.Id);
         var usersById = users.ToDictionary(user => user.Id);
@@ -247,7 +272,8 @@ public class AppointmentService(
         var servicesById = services.ToDictionary(service => service.Id);
         var selectionsByAppointmentId = selections
             .GroupBy(selection => selection.AppointmentId)
-            .ToDictionary(group => group.Key, group => (IReadOnlyCollection<AppointmentServiceSelection>)group.ToArray());
+            .ToDictionary(group => group.Key,
+                group => (IReadOnlyCollection<AppointmentServiceSelection>)group.ToArray());
 
         return appointmentList.Select(appointment =>
         {

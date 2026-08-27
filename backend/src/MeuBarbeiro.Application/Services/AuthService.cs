@@ -3,80 +3,87 @@ using MeuBarbeiro.Application.Abstractions.Persistence;
 using MeuBarbeiro.Application.DTOs.Auth;
 using MeuBarbeiro.Application.DTOs.Barbers;
 using MeuBarbeiro.Application.DTOs.Clients;
+using MeuBarbeiro.Application.Exceptions;
 using MeuBarbeiro.Domain.Entities;
 using MeuBarbeiro.Domain.Enums;
 
 namespace MeuBarbeiro.Application.Services;
 
-public class AuthService(IUserRepository userRepository, IClientRepository clientRepository, IBarberRepository barberRepository, 
-    IPasswordHasherService passwordHasher, IJwtTokenService jwtTokenService)
+public class AuthService(
+    IUserRepository userRepository,
+    IClientRepository clientRepository,
+    IBarberRepository barberRepository,
+    IPasswordHasherService passwordHasher,
+    IJwtTokenService jwtTokenService) : IAuthService
 {
-    private readonly IUserRepository _userRepository = userRepository;
-    private readonly IClientRepository _clientRepository = clientRepository;
-    private readonly IBarberRepository _barberRepository = barberRepository;
-    private readonly IPasswordHasherService _passwordHasher = passwordHasher;
-    private readonly IJwtTokenService _jwtTokenService = jwtTokenService;
-
-    public async Task<AuthResponse> RegisterClientAsync(RegisterClientRequest request)
+    public async Task<AuthResponse> RegisterClientAsync(RegisterClientRequest request,
+        CancellationToken cancellationToken = default)
     {
-        var existingUser = await _userRepository.GetByEmailAsync(request.Email);
-        if (existingUser is not null) throw new Exception($"Email {request.Email} já cadastrado");
-        
-        var passwordHash = _passwordHasher.Hash(request.Password);
-        
+        var existingUser = await userRepository.GetByEmailAsync(request.Email, cancellationToken);
+        if (existingUser is not null) throw new EmailAlreadyRegisteredException(request.Email);
+
+        var passwordHash = passwordHasher.Hash(request.Password);
+
         var user = new User(request.Name, request.Email, passwordHash, UserRole.Client);
-        await _userRepository.AddAsync(user);
+        await userRepository.AddAsync(user, cancellationToken);
 
         var client = new Client(user.Id);
-        await _clientRepository.AddAsync(client);
+        await clientRepository.AddAsync(client, cancellationToken);
 
-        var token = _jwtTokenService.GenerateToken(user);
+        var token = jwtTokenService.GenerateToken(user);
 
-        return new AuthResponse
-        {
-            AccessToken = token,
-            UserId = user.Id,
-            Name = user.Name,
-            Email = user.Email,
-            Role = user.Role.ToString()
-        };
+        return CreateAuthResponse(user, token);
     }
 
-    public async Task<AuthResponse> RegisterBarberAsync(RegisterBarberRequest request)
+    public async Task<AuthResponse> RegisterBarberAsync(RegisterBarberRequest request,
+        CancellationToken cancellationToken = default)
     {
-        var existingUser = await _userRepository.GetByEmailAsync(request.Email);
-        if (existingUser is not null) throw new Exception($"Email {request.Email} já cadastrado");
-        
-        var passwordHash = _passwordHasher.Hash(request.Password);
-        
+        var existingUser = await userRepository.GetByEmailAsync(request.Email, cancellationToken);
+        if (existingUser is not null) throw new EmailAlreadyRegisteredException(request.Email);
+
+        var passwordHash = passwordHasher.Hash(request.Password);
+
         var user = new User(request.Name, request.Email, passwordHash, UserRole.Barber);
-        await _userRepository.AddAsync(user);
-        
-        var barber = new Barber(user.Id, request.BarbershopId);
-        await _barberRepository.AddAsync(barber);
-        
-        var token = _jwtTokenService.GenerateToken(user);
-        
-        return new AuthResponse
-        {
-            AccessToken = token,
-            UserId = user.Id,
-            Name = user.Name,
-            Email = user.Email,
-            Role = user.Role.ToString()
-        };
+        await userRepository.AddAsync(user, cancellationToken);
+
+        var barber = new Barber(user.Id);
+        await barberRepository.AddAsync(barber, cancellationToken);
+
+        var token = jwtTokenService.GenerateToken(user);
+
+        return CreateAuthResponse(user, token);
     }
 
-    public async Task<AuthResponse> LoginAsync(LoginRequest request)
+    public async Task<AuthResponse> RegisterBarbeshopOwnerAsync(RegisterBarbershopOwnerRequest request,
+        CancellationToken cancellationToken = default)
     {
-        var user = await _userRepository.GetByEmailAsync(request.Email);
-        if (user is null) throw new Exception("E-mail não cadastrado");
-
-        var passwordIsValid = _passwordHasher.VerifyPasswordHash(request.Password, user.PasswordHash);
-        if (!passwordIsValid) throw new Exception("E-mail ou senha inválidos.");
+        var existingUser = await userRepository.GetByEmailAsync(request.Email, cancellationToken);
+        if (existingUser is not null) throw new EmailAlreadyRegisteredException(request.Email);
         
-        var token = _jwtTokenService.GenerateToken(user);
+        var passwordHash = passwordHasher.Hash(request.Password);
+        
+        var user = new User (request.Name, request.Email, passwordHash, UserRole.Barber);
+        await userRepository.AddAsync(user, cancellationToken);
+        
+        var token = jwtTokenService.GenerateToken(user);
+        return CreateAuthResponse(user, token);
+    }
 
+    public async Task<AuthResponse> LoginAsync(LoginRequest request, CancellationToken cancellationToken = default)
+    {
+        var user = await userRepository.GetByEmailAsync(request.Email, cancellationToken);
+        if (user is null) throw new InvalidCredentialsException();
+
+        var passwordIsValid = passwordHasher.VerifyPasswordHash(request.Password, user.PasswordHash);
+        if (!passwordIsValid) throw new InvalidCredentialsException();
+
+        var token = jwtTokenService.GenerateToken(user);
+
+        return CreateAuthResponse(user, token);
+    }
+
+    private static AuthResponse CreateAuthResponse(User user, string token)
+    {
         return new AuthResponse
         {
             AccessToken = token,

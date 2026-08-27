@@ -2,7 +2,7 @@ namespace MeuBarbeiro.Domain.Entities;
 
 public sealed class Review
 {
-    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid Id { get; private set; } = Guid.NewGuid();
     public Guid AppointmentId { get; set; }
     public Guid ClientId { get; set; }
     public Guid BarberId { get; set; }

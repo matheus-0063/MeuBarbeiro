@@ -2,44 +2,73 @@ using FluentValidation.Results;
 
 namespace MeuBarbeiro.Application.DTOs.Shared;
 
-public class ServiceResult<T>
+public class ServiceResult
 {
-    public ServiceResult() {}
+    public ValidationResult ValidationResult { get; protected init; } = new ValidationResult();
+    public bool IsNotFound { get; protected init; }
+    public bool IsForbidden { get; protected init; }
+    public bool IsValid => ValidationResult.IsValid;
+    public bool IsSuccess { get; protected init; }
 
-    public ServiceResult(T data, ValidationResult? validationResult = null)
+    protected ServiceResult()
     {
-        Data = data;
-        ValidationResult = validationResult ?? new ValidationResult();
     }
 
-    public T? Data { get; set; }
-    public ValidationResult ValidationResult { get; set; } = new ValidationResult();
-    public bool IsNotFound { get; set; }
-    public bool IsValid => ValidationResult.IsValid;
+    public static ServiceResult NotFound()
+    {
+        return new ServiceResult { IsNotFound = true };
+    }
+
+    public static ServiceResult Forbidden()
+    {
+        return new ServiceResult { IsForbidden = true };
+    }
     
+    public static ServiceResult Success()
+    {
+        return new ServiceResult { IsSuccess = true };
+    }
+
+    public static ServiceResult Failure(ValidationResult validationResult)
+    {
+        return new ServiceResult { ValidationResult = validationResult };
+    }
+}
+
+public class ServiceResult<T> : ServiceResult
+{
+    public T? Data { get; private set; }
+
     public static ServiceResult<T> Success(T data)
     {
         return new ServiceResult<T>
         {
             Data = data,
-            ValidationResult = new ValidationResult()
+            IsSuccess = true
         };
     }
 
-    public static ServiceResult<T> Failure(ValidationResult validationResult)
+    public new static ServiceResult<T> Forbidden()
     {
         return new ServiceResult<T>
         {
-            ValidationResult = validationResult
+            IsForbidden = true
         };
     }
 
-    public static ServiceResult<T> NotFound()
+    public new static ServiceResult<T> Failure(ValidationResult validationResult)
     {
         return new ServiceResult<T>
         {
-            IsNotFound = true,
-            ValidationResult = new ValidationResult()
+            ValidationResult = validationResult,
+        };
+    }
+
+    public new static ServiceResult<T> NotFound()
+    {
+        return new ServiceResult<T>
+        {
+            IsNotFound = true
         };
     }
 }

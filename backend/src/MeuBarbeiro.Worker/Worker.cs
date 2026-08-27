@@ -129,7 +129,7 @@ public class Worker(ILogger<Worker> logger, IRabbitMqConnectionProvider connecti
             return;
         }
 
-        appointment.AlterStatus(Domain.Enums.AppointmentStatus.InProgress);
+        //appointment.SetStatus(Domain.Enums.AppointmentStatus.InProgress);
         await dbContext.SaveChangesAsync();
 
         logger.LogInformation("Appointment {AppointmentId} atualizado para InProgress apos processamento do evento.", appointmentId);

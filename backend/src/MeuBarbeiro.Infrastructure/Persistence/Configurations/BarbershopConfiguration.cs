@@ -11,6 +11,10 @@ public class BarbershopConfiguration : IEntityTypeConfiguration<Barbershop>
         builder.ToTable("Barbershops");
 
         builder.HasKey(barbershop => barbershop.Id);
+        
+        builder.Property(barbershop => barbershop.OwnerUserId)
+            .HasMaxLength(100)
+            .IsRequired();
 
         builder.Property(barbershop => barbershop.Name)
             .HasMaxLength(120)

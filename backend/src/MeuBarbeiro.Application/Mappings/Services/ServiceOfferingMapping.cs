@@ -5,15 +5,15 @@ namespace MeuBarbeiro.Application.Mappings.Services;
 
 public static class ServiceOfferingMapping
 {
-    public static ServiceOffering ToEntity(this AddServicesRequestDto request) => new()
-    {
-        Id = Guid.NewGuid(),
-        BarbershopId = request.BarbershopId,
-        Name = request.Name,
-        Price = request.Price,
-        Description = request.Description,
-        DurationMinutes = request.DurationMinutes
-    };
+    public static ServiceOffering ToEntity(this CreateServicesRequestDto request, Guid barbershopId) =>
+        new(
+            barbershopId: barbershopId,
+            name: request.Name,
+            price: request.Price,
+            description: request.Description,
+            durationMinutes: request.DurationMinutes
+        );
+
 
     public static ServiceResponseDto ToResponseDto(this ServiceOffering entity) => new()
     {

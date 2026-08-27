@@ -1,8 +1,7 @@
 namespace MeuBarbeiro.Application.DTOs.Services;
 
-public class AddServicesRequestDto
+public class UpdateServicesRequestDto
 {
-    public Guid BarbershopId { get; set; }
     public string Name { get; set; } = string.Empty;
     public decimal Price { get; set; }
     public string Description { get; set; } = string.Empty;

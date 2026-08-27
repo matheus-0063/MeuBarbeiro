@@ -3,18 +3,22 @@ using System.Security.Claims;
 using System.Text;
 using MeuBarbeiro.Application.Abstractions.Services;
 using MeuBarbeiro.Domain.Entities;
-using MeuBarbeiro.Domain.Settings;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using JwtRegisteredClaimNames = Microsoft.IdentityModel.JsonWebTokens.JwtRegisteredClaimNames;
 
-namespace MeuBarbeiro.Application.Services;
+namespace MeuBarbeiro.Infrastructure.Security.Jwt;
 
 public class JwtTokenService(IConfiguration configuration) : IJwtTokenService
 {
     public string GenerateToken(User user)
     {
         var jwtSettings = configuration.GetSection("Jwt").Get<JwtSettings>();
+        
+        if (string.IsNullOrWhiteSpace(jwtSettings!.SecretKey))
+        {
+            throw new InvalidOperationException("A chave JWT não foi configurada.");
+        }
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings!.SecretKey));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);

@@ -10,69 +10,83 @@ namespace MeuBarbeiro.Api.Controllers;
 [ApiVersion("1.0")]
 [Route("api/v{version:apiVersion}/services")]
 public class ServicesController(
-    IServicesService servicesService,
-    IBarberRepository barberRepository) : BaseController
+    IServicesService servicesService) : BaseController
 {
-    [HttpGet]
-    [ProducesResponseType<IEnumerable<ServiceResponseDto>>(StatusCodes.Status200OK)]
-    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetServices([FromQuery] Guid barbershopId, CancellationToken cancellationToken = default)
-    {
-        var result = await servicesService.GetServices(barbershopId, cancellationToken);
-
-        if (result.IsNotFound)
-        {
-            return NotFound();
-        }
-
-        return Ok(result.Data);
-    }
-
-    [HttpPost]
-    [Authorize(Roles = "Barber")]
+    [HttpPost("barbershop/{barbershopId}")]
+    [Authorize(Roles = "BarbershopOwner")]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> AddServices([FromBody] AddServicesRequestDto request, CancellationToken cancellationToken)
+    public async Task<IActionResult> AddServices([FromBody] CreateServicesRequestDto request, Guid barbershopId,
+        CancellationToken cancellationToken)
     {
         if (!TryGetAuthenticatedUserId(out var userId))
-        {
             return Unauthorized();
-        }
 
-        var barber = await barberRepository.GetByUserIdAsync(userId, cancellationToken);
-        if (barber is null)
-        {
-            return NotFound(new ProblemDetails
-            {
-                Title = "Perfil de barbeiro não encontrado."
-            });
-        }
+        var result = await servicesService.CreateService(request, userId, barbershopId, cancellationToken);
 
-        if (!barber.BarbershopId.HasValue)
-        {
-            return NotFound(new ProblemDetails
-            {
-                Title = "O barbeiro autenticado ainda não possui uma barbearia vinculada."
-            });
-        }
+        if (result.IsNotFound)
+            return NotFound();
 
-        if (barber.BarbershopId.Value != request.BarbershopId)
-        {
+        if (result.IsForbidden)
             return Forbid();
-        }
 
-        var result = await servicesService.AddServices(request);
-        if (ResponseHasErros(result.ValidationResult))
-        {
-            return ValidationProblem();
-        }
+        return ResponseHasErros(result.ValidationResult)
+            ? ValidationProblem()
+            : CreatedAtAction(nameof(GetService), new { result.Data?.Id });
+    }
 
-        return CreatedAtAction(nameof(GetServices), new { version = "1.0", barbershopId = request.BarbershopId }, new
-        {
-            serviceId = result.Data
-        });
+    [HttpPatch("barbershop/{barbershopId}/services/{serviceId}")]
+    [Authorize(Roles = "BarbershopOwner")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateServices([FromBody] UpdateServicesRequestDto request, [FromQuery] Guid barbershopId, [FromQuery] Guid serviceId,
+        CancellationToken cancellationToken)
+    {
+        if (!TryGetAuthenticatedUserId(out var userId)) return Unauthorized();
+        
+        var result = await servicesService.UpdateService(request, userId, barbershopId, serviceId, cancellationToken);
+        
+        if (result.IsNotFound)
+            return NotFound();
+        
+        if (result.IsForbidden)
+            return Forbid();
+        
+        return ResponseHasErros(result.ValidationResult)
+            ? ValidationProblem()
+            : Ok(result.Data);
+    }
+
+    [HttpGet("{serviceId}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetService([FromQuery] Guid serviceId, CancellationToken cancellationToken)
+    {
+        var result = await servicesService.GetService(serviceId, cancellationToken);
+        
+        if(result.IsNotFound)
+            return NotFound();
+        
+        return Ok(result.Data);
+    }
+    
+    [HttpGet]
+    [ProducesResponseType<IEnumerable<ServiceResponseDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetServices([FromQuery] Guid barbershopId,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await servicesService.GetServices(barbershopId, cancellationToken);
+
+        if (result.IsNotFound)
+            return NotFound();
+
+        return Ok(result.Data);
     }
 }
