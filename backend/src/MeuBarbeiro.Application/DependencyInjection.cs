@@ -12,7 +12,7 @@ public static class DependencyInjection
         services.AddScoped<IAppointmentService, AppointmentService>();
         services.AddScoped<IBarbershopService, BarbershopService>();
         services.AddScoped<IServicesService, ServicesService>();
-        
+
         return services;
     }
 }

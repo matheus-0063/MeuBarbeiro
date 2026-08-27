@@ -20,14 +20,14 @@ public static class DependencyInjection
             options.UseSqlite(configuration.GetConnectionString("DefaultConnection")));
 
         services.AddSingleton<DatabaseSchemaInitializer>();
-        
+
         services.Configure<RabbitMqOptions>(configuration.GetSection(RabbitMqOptions.SectionName));
-        
+
         services.AddSingleton<IRabbitMqConnectionProvider, RabbitMqConnectionProvider>();
         services.AddSingleton<RabbitMqTopologyInitializer>();
 
         services.AddScoped<IEventPublisher, RabbitMqEventPublisher>();
-        
+
         services.AddScoped<IAppointmentRepository, SqliteAppointmentRepository>();
         services.AddScoped<IAppointmentServiceSelectionRepository, SqliteAppointmentServiceSelectionRepository>();
         services.AddScoped<IBarberRepository, SqliteBarberRepository>();

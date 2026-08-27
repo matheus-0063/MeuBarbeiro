@@ -13,7 +13,7 @@ public class UserTests
         var user = new UserBuilder()
             .WithRole(UserRole.Client)
             .Build();
-        
+
         // Assert
         user.Role.Should().Be(UserRole.Client);
     }
@@ -22,10 +22,10 @@ public class UserTests
     public void User_DeveSerCriadoComRoleBarbeiro_QuandoForBarbeiro()
     {
         // Act
-        var user =  new UserBuilder()
+        var user = new UserBuilder()
             .WithRole(UserRole.Barber)
             .Build();
-        
+
         // Assert
         user.Role.Should().Be(UserRole.Barber);
     }
@@ -37,7 +37,7 @@ public class UserTests
         var user = new UserBuilder()
             .WithRole(UserRole.BarbershopOwner)
             .Build();
-        
+
         // Assert
         user.Role.Should().Be(UserRole.BarbershopOwner);
     }
@@ -48,7 +48,7 @@ public class UserTests
         // Act
         var user = new UserBuilder()
             .Build();
-        
+
         // Assert
         user.Id.Should().NotBeEmpty();
     }
@@ -58,12 +58,12 @@ public class UserTests
     {
         // Arrange
         var email = "usuario@email.com";
-        
+
         // Act
         var user = new UserBuilder()
             .WithEmail(email)
             .Build();
-        
+
         // Assert
         user.Email.Should().Be(email);
     }
@@ -74,7 +74,7 @@ public class UserTests
         // Act
         var user = new UserBuilder()
             .Build();
-        
+
         // Assert
         user.CreateAt.Should().BeCloseTo(DateTime.Now, TimeSpan.FromSeconds(1));
     }

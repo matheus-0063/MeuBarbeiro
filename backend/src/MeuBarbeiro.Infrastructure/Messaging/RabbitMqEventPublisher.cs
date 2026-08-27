@@ -1,4 +1,3 @@
-using System.Text;
 using System.Text.Json;
 using MeuBarbeiro.Application.Abstractions.Messaging;
 using MeuBarbeiro.Contracts.Events;
@@ -7,11 +6,13 @@ using RabbitMQ.Client;
 
 namespace MeuBarbeiro.Infrastructure.Messaging;
 
-public sealed class RabbitMqEventPublisher(IRabbitMqConnectionProvider connectionProvider, RabbitMqTopologyInitializer topologyInitializer,
+public sealed class RabbitMqEventPublisher(
+    IRabbitMqConnectionProvider connectionProvider,
+    RabbitMqTopologyInitializer topologyInitializer,
     IOptions<RabbitMqOptions> options) : IEventPublisher
 {
-    private readonly RabbitMqOptions _options = options.Value;
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+    private readonly RabbitMqOptions _options = options.Value;
 
     public Task PublishAsync<TMessage>(TMessage message, CancellationToken cancellationToken = default)
     {
@@ -31,25 +32,19 @@ public sealed class RabbitMqEventPublisher(IRabbitMqConnectionProvider connectio
         properties.ContentType = "application/json";
 
         channel.BasicPublish(
-            exchange: _options.Exchange,
-            routingKey: routingKey,
-            basicProperties: properties,
-            body: payload);
+            _options.Exchange,
+            routingKey,
+            properties,
+            payload);
 
         return Task.CompletedTask;
     }
 
     private string ResolveRoutingKey(Type messageType)
     {
-        if (messageType == typeof(AppointmentRequestedIntegrationEvent))
-        {
-            return _options.RequestedQueue;
-        }
+        if (messageType == typeof(AppointmentRequestedIntegrationEvent)) return _options.RequestedQueue;
 
-        if (messageType == typeof(AppointmentStatusUpdatedIntegrationEvent))
-        {
-            return _options.StatusUpdatedQueue;
-        }
+        if (messageType == typeof(AppointmentStatusUpdatedIntegrationEvent)) return _options.StatusUpdatedQueue;
 
         throw new InvalidOperationException($"Nao existe routing key configurada para {messageType.Name}.");
     }

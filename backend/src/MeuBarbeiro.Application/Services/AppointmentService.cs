@@ -1,11 +1,11 @@
-using MeuBarbeiro.Application.Abstractions.Messaging;
 using FluentValidation.Results;
+using MeuBarbeiro.Application.Abstractions.Messaging;
 using MeuBarbeiro.Application.Abstractions.Persistence;
 using MeuBarbeiro.Application.Abstractions.Services;
-using MeuBarbeiro.Contracts.Events;
 using MeuBarbeiro.Application.DTOs.Appointments;
 using MeuBarbeiro.Application.DTOs.Shared;
 using MeuBarbeiro.Application.Mappings.Appointments;
+using MeuBarbeiro.Contracts.Events;
 using MeuBarbeiro.Domain.Entities;
 using MeuBarbeiro.Domain.Enums;
 using MeuBarbeiro.Domain.Exceptions;
@@ -53,7 +53,7 @@ public class AppointmentService(
 
         var totalPrice = selectedServices.Sum(service => service.Price);
         var appointment = request.ToEntity(clientId, barber.First().Id, totalPrice);
-        
+
         await appointmentRepository.AddAsync(appointment, cancellationToken);
 
         var selections = request.ServiceIds
@@ -67,10 +67,7 @@ public class AppointmentService(
 
         var selectionValidationResult =
             await appointmentServiceSelectionRepository.AddRangeAsync(selections, cancellationToken);
-        if (!selectionValidationResult.IsValid)
-        {
-            return ServiceResult<Guid>.Failure(selectionValidationResult);
-        }
+        if (!selectionValidationResult.IsValid) return ServiceResult<Guid>.Failure(selectionValidationResult);
 
         await eventPublisher.PublishAsync(new AppointmentRequestedIntegrationEvent(
             appointment.Id,
@@ -90,10 +87,7 @@ public class AppointmentService(
         CancellationToken cancellationToken = default)
     {
         var appointment = await appointmentRepository.GetByIdAsync(appointmentId, cancellationToken);
-        if (appointment == null)
-        {
-            return ServiceResult<AppointmentReviewResponseDto>.NotFound();
-        }
+        if (appointment == null) return ServiceResult<AppointmentReviewResponseDto>.NotFound();
 
         if (appointment.ClientId != clientId)
         {
@@ -140,9 +134,7 @@ public class AppointmentService(
 
         var addValidationResult = await reviewRepository.AddAsync(review, cancellationToken);
         if (!addValidationResult.IsValid)
-        {
             return ServiceResult<AppointmentReviewResponseDto>.Failure(addValidationResult);
-        }
 
         var barbershop = await barbershopRepository.GetByIdAsync(appointment.BarbershopId, cancellationToken);
         if (barbershop != null)
@@ -165,10 +157,7 @@ public class AppointmentService(
     public async Task<ServiceResult<AppointmentResponseDto>> GetAppointmentAsync(Guid id)
     {
         var appointment = await appointmentRepository.GetByIdAsync(id);
-        if (appointment == null)
-        {
-            return ServiceResult<AppointmentResponseDto>.NotFound();
-        }
+        if (appointment == null) return ServiceResult<AppointmentResponseDto>.NotFound();
 
         var response = await BuildResponseDtosAsync([appointment]);
         return ServiceResult<AppointmentResponseDto>.Success(response.Single());
@@ -197,11 +186,9 @@ public class AppointmentService(
         }
 
         if (status.HasValue)
-        {
             appointments = appointments
                 .Where(appointment => appointment.Status == status.Value)
                 .ToArray();
-        }
 
         var response = await BuildResponseDtosAsync(appointments, cancellationToken);
         return ServiceResult<IEnumerable<AppointmentResponseDto>>.Success(response);
@@ -244,10 +231,7 @@ public class AppointmentService(
         IEnumerable<Appointment> appointments, CancellationToken cancellationToken = default)
     {
         var appointmentList = appointments.ToArray();
-        if (appointmentList.Length == 0)
-        {
-            return [];
-        }
+        if (appointmentList.Length == 0) return [];
 
         var clients = await clientRepository.ListByIdsAsync(appointmentList.Select(appointment => appointment.ClientId),
             cancellationToken);
@@ -281,14 +265,10 @@ public class AppointmentService(
 
             if (clientsById.TryGetValue(appointment.ClientId, out var client)
                 && usersById.TryGetValue(client.UserId, out var user))
-            {
                 dto.ClientName = user.Name;
-            }
 
             if (barbershopsById.TryGetValue(appointment.BarbershopId, out var barbershop))
-            {
                 dto.BarbershopName = barbershop.Name;
-            }
 
             if (reviewsByAppointmentId.TryGetValue(appointment.Id, out var review))
             {
@@ -297,7 +277,6 @@ public class AppointmentService(
             }
 
             if (selectionsByAppointmentId.TryGetValue(appointment.Id, out var appointmentSelections))
-            {
                 dto.SelectedServices = appointmentSelections
                     .Where(selection => servicesById.ContainsKey(selection.ServiceOfferingId))
                     .Select(selection =>
@@ -313,7 +292,6 @@ public class AppointmentService(
                         };
                     })
                     .ToArray();
-            }
 
             return dto;
         }).ToArray();

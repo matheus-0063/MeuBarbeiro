@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json;
 using MeuBarbeiro.Contracts.Events;
 using MeuBarbeiro.Domain.Entities;
+using MeuBarbeiro.Domain.Enums;
 using MeuBarbeiro.Infrastructure.Messaging;
 using MeuBarbeiro.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -11,11 +12,16 @@ using RabbitMQ.Client.Events;
 
 namespace MeuBarbeiro.Worker;
 
-public class Worker(ILogger<Worker> logger, IRabbitMqConnectionProvider connectionProvider, RabbitMqTopologyInitializer topologyInitializer, DatabaseSchemaInitializer databaseSchemaInitializer,
-    IOptions<RabbitMqOptions> options, IServiceScopeFactory scopeFactory) : BackgroundService
+public class Worker(
+    ILogger<Worker> logger,
+    IRabbitMqConnectionProvider connectionProvider,
+    RabbitMqTopologyInitializer topologyInitializer,
+    DatabaseSchemaInitializer databaseSchemaInitializer,
+    IOptions<RabbitMqOptions> options,
+    IServiceScopeFactory scopeFactory) : BackgroundService
 {
-    private readonly RabbitMqOptions _options = options.Value;
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+    private readonly RabbitMqOptions _options = options.Value;
     private IModel? _channel;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -65,7 +71,7 @@ public class Worker(ILogger<Worker> logger, IRabbitMqConnectionProvider connecti
             }
         };
 
-        _channel!.BasicConsume(queue: queueName, autoAck: false, consumer: consumer);
+        _channel!.BasicConsume(queueName, false, consumer);
     }
 
     private async Task HandleRequestedAsync(string queueName, string payload)
@@ -74,7 +80,9 @@ public class Worker(ILogger<Worker> logger, IRabbitMqConnectionProvider connecti
                       ?? throw new InvalidOperationException("Payload AppointmentRequested invalido.");
 
         await MarkAppointmentAsInProgressAsync(message.AppointmentId);
-        logger.LogInformation("Consumed event AppointmentRequested from queue {QueueName} for appointment {AppointmentId}.", queueName, message.AppointmentId);
+        logger.LogInformation(
+            "Consumed event AppointmentRequested from queue {QueueName} for appointment {AppointmentId}.", queueName,
+            message.AppointmentId);
         await PersistAuditAsync(nameof(AppointmentRequestedIntegrationEvent), queueName, payload, "Processed");
     }
 
@@ -83,11 +91,14 @@ public class Worker(ILogger<Worker> logger, IRabbitMqConnectionProvider connecti
         var message = JsonSerializer.Deserialize<AppointmentStatusUpdatedIntegrationEvent>(payload, JsonOptions)
                       ?? throw new InvalidOperationException("Payload AppointmentStatusUpdated invalido.");
 
-        logger.LogInformation("Consumed event AppointmentStatusUpdated from queue {QueueName} for appointment {AppointmentId}.", queueName, message.AppointmentId);
+        logger.LogInformation(
+            "Consumed event AppointmentStatusUpdated from queue {QueueName} for appointment {AppointmentId}.",
+            queueName, message.AppointmentId);
         await PersistAuditAsync(nameof(AppointmentStatusUpdatedIntegrationEvent), queueName, payload, "Processed");
     }
 
-    private async Task PersistAuditAsync(string eventName, string queueName, string payload, string status, string? errorMessage = null)
+    private async Task PersistAuditAsync(string eventName, string queueName, string payload, string status,
+        string? errorMessage = null)
     {
         using var scope = scopeFactory.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -108,7 +119,8 @@ public class Worker(ILogger<Worker> logger, IRabbitMqConnectionProvider connecti
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Falha ao persistir auditoria do evento {EventName} na fila {QueueName}.", eventName, queueName);
+            logger.LogError(ex, "Falha ao persistir auditoria do evento {EventName} na fila {QueueName}.", eventName,
+                queueName);
         }
     }
 
@@ -124,14 +136,12 @@ public class Worker(ILogger<Worker> logger, IRabbitMqConnectionProvider connecti
             return;
         }
 
-        if (appointment.Status == Domain.Enums.AppointmentStatus.InProgress)
-        {
-            return;
-        }
+        if (appointment.Status == AppointmentStatus.InProgress) return;
 
         //appointment.SetStatus(Domain.Enums.AppointmentStatus.InProgress);
         await dbContext.SaveChangesAsync();
 
-        logger.LogInformation("Appointment {AppointmentId} atualizado para InProgress apos processamento do evento.", appointmentId);
+        logger.LogInformation("Appointment {AppointmentId} atualizado para InProgress apos processamento do evento.",
+            appointmentId);
     }
 }

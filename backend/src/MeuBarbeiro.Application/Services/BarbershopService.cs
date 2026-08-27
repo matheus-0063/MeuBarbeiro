@@ -78,7 +78,7 @@ public class BarbershopService(
     {
         var barbershops = await barbershopRepository.GetByBarbershopOwnerIdAsync(ownerId, cancellationToken);
         if (barbershops == null) return ServiceResult<IEnumerable<BarbershopResponseDto>>.NotFound();
-        
+
         var response = barbershops.Select(b => b.ToResponseDto());
         return ServiceResult<IEnumerable<BarbershopResponseDto>>.Success(response);
     }

@@ -1,5 +1,4 @@
 using Asp.Versioning;
-using MeuBarbeiro.Application.Abstractions.Persistence;
 using MeuBarbeiro.Application.Abstractions.Services;
 using MeuBarbeiro.Application.DTOs.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -45,19 +44,20 @@ public class ServicesController(
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> UpdateServices([FromBody] UpdateServicesRequestDto request, [FromQuery] Guid barbershopId, [FromQuery] Guid serviceId,
+    public async Task<IActionResult> UpdateServices([FromBody] UpdateServicesRequestDto request,
+        [FromQuery] Guid barbershopId, [FromQuery] Guid serviceId,
         CancellationToken cancellationToken)
     {
         if (!TryGetAuthenticatedUserId(out var userId)) return Unauthorized();
-        
+
         var result = await servicesService.UpdateService(request, userId, barbershopId, serviceId, cancellationToken);
-        
+
         if (result.IsNotFound)
             return NotFound();
-        
+
         if (result.IsForbidden)
             return Forbid();
-        
+
         return ResponseHasErros(result.ValidationResult)
             ? ValidationProblem()
             : Ok(result.Data);
@@ -69,13 +69,13 @@ public class ServicesController(
     public async Task<IActionResult> GetService([FromQuery] Guid serviceId, CancellationToken cancellationToken)
     {
         var result = await servicesService.GetService(serviceId, cancellationToken);
-        
-        if(result.IsNotFound)
+
+        if (result.IsNotFound)
             return NotFound();
-        
+
         return Ok(result.Data);
     }
-    
+
     [HttpGet]
     [ProducesResponseType<IEnumerable<ServiceResponseDto>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]

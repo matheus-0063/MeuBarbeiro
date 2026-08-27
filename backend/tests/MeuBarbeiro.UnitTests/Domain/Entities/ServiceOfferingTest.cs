@@ -11,7 +11,7 @@ public class ServiceOfferingTest
         // Arrange
         var serviceOffering = new ServiceOfferingBuilder()
             .Build();
-        
+
         // Assert
         serviceOffering.Id.Should().NotBeEmpty();
     }
@@ -23,7 +23,7 @@ public class ServiceOfferingTest
         var func = () => new ServiceOfferingBuilder()
             .WithBarbershopId(Guid.Empty)
             .Build();
-        
+
         // Assert
         func.Should().Throw<ArgumentException>();
     }

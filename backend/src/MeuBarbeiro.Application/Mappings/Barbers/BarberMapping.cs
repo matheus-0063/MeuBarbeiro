@@ -7,7 +7,7 @@ public static class BarberMapping
 {
     public static BarberResponseDto ToDto(this Barber entity, string name)
     {
-        return new BarberResponseDto()
+        return new BarberResponseDto
         {
             Id = entity.Id,
             Name = name

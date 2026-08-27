@@ -12,22 +12,13 @@ public sealed class RabbitMqConnectionProvider(IOptions<RabbitMqOptions> options
 
     public IConnection GetConnection()
     {
-        if (_disposed)
-        {
-            throw new ObjectDisposedException(nameof(RabbitMqConnectionProvider));
-        }
+        if (_disposed) throw new ObjectDisposedException(nameof(RabbitMqConnectionProvider));
 
-        if (_connection is { IsOpen: true })
-        {
-            return _connection;
-        }
+        if (_connection is { IsOpen: true }) return _connection;
 
         lock (_syncRoot)
         {
-            if (_connection is { IsOpen: true })
-            {
-                return _connection;
-            }
+            if (_connection is { IsOpen: true }) return _connection;
 
             _connection?.Dispose();
 
@@ -53,10 +44,7 @@ public sealed class RabbitMqConnectionProvider(IOptions<RabbitMqOptions> options
 
     public void Dispose()
     {
-        if (_disposed)
-        {
-            return;
-        }
+        if (_disposed) return;
 
         _connection?.Dispose();
         _disposed = true;

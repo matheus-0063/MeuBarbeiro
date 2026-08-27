@@ -1,4 +1,3 @@
-using FluentValidation.Results;
 using MeuBarbeiro.Application.Abstractions.Persistence;
 using MeuBarbeiro.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -7,7 +6,8 @@ namespace MeuBarbeiro.Infrastructure.Persistence.Repositories;
 
 public class SqliteAppointmentRepository(AppDbContext dbContext) : IAppointmentRepository
 {
-    public async Task<IReadOnlyCollection<Appointment>> ListByBarberAsync(Guid barberId, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyCollection<Appointment>> ListByBarberAsync(Guid barberId,
+        CancellationToken cancellationToken = default)
     {
         return await dbContext.Appointments
             .Where(appointment => appointment.BarberId == barberId)
@@ -15,7 +15,8 @@ public class SqliteAppointmentRepository(AppDbContext dbContext) : IAppointmentR
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<IReadOnlyCollection<Appointment>> ListByClientAsync(Guid clientId, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyCollection<Appointment>> ListByClientAsync(Guid clientId,
+        CancellationToken cancellationToken = default)
     {
         return await dbContext.Appointments
             .Where(appointment => appointment.ClientId == clientId)

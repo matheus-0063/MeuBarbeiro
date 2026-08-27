@@ -14,33 +14,33 @@ public sealed class RabbitMqTopologyInitializer(
         using var channel = connectionProvider.CreateChannel();
 
         channel.ExchangeDeclare(
-            exchange: _options.Exchange,
-            type: ExchangeType.Direct,
-            durable: true,
-            autoDelete: false);
+            _options.Exchange,
+            ExchangeType.Direct,
+            true,
+            false);
 
         channel.QueueDeclare(
-            queue: _options.RequestedQueue,
-            durable: true,
-            exclusive: false,
-            autoDelete: false,
-            arguments: null);
+            _options.RequestedQueue,
+            true,
+            false,
+            false,
+            null);
 
         channel.QueueBind(
-            queue: _options.RequestedQueue,
-            exchange: _options.Exchange,
-            routingKey: _options.RequestedQueue);
+            _options.RequestedQueue,
+            _options.Exchange,
+            _options.RequestedQueue);
 
         channel.QueueDeclare(
-            queue: _options.StatusUpdatedQueue,
-            durable: true,
-            exclusive: false,
-            autoDelete: false,
-            arguments: null);
+            _options.StatusUpdatedQueue,
+            true,
+            false,
+            false,
+            null);
 
         channel.QueueBind(
-            queue: _options.StatusUpdatedQueue,
-            exchange: _options.Exchange,
-            routingKey: _options.StatusUpdatedQueue);
+            _options.StatusUpdatedQueue,
+            _options.Exchange,
+            _options.StatusUpdatedQueue);
     }
 }

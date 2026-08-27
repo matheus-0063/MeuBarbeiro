@@ -25,25 +25,26 @@ public class AppointmentTests
         var appointment = () => new AppointmentBuilder()
             .WithClientId(Guid.Empty)
             .Build();
-        
+
         // Assert
         appointment.Should().Throw<ArgumentException>();
     }
 
     #region Accept Method
+
     [Fact]
     public void Accept_AlteraStatus_QuandoBarberIdEStatusSaoValidos()
     {
         // Arrange
-        Guid barberId = Guid.NewGuid();
-        
+        var barberId = Guid.NewGuid();
+
         var appointment = new AppointmentBuilder()
             .WithBarberId(barberId)
             .Build();
-        
+
         // Act
         appointment.Accept(barberId);
-        
+
         // Assert
         appointment.Status.Should().Be(AppointmentStatus.Accepted);
         appointment.BarberId.Should().Be(barberId);
@@ -53,39 +54,40 @@ public class AppointmentTests
     public void Accept_DeveFalhar_QuandoBarberIdNaoForOMesmo()
     {
         // Arrange
-        Guid barberId = Guid.NewGuid();
-        
+        var barberId = Guid.NewGuid();
+
         var appointment = new AppointmentBuilder()
             .Build();
-        
+
         // Act
         var act = () => appointment.Accept(barberId);
-        
+
         // Assert
         act.Should().Throw<AppointmentActorNotAllowedException>();
         appointment.Status.Should().Be(AppointmentStatus.Pending);
     }
-    
+
     [Fact]
     public void Accept_DeveFalhar_QuandoStatusNaoForPending()
     {
         // Arrange 
-        Guid barberId = Guid.NewGuid();
-        
+        var barberId = Guid.NewGuid();
+
         var appointment = new AppointmentBuilder()
             .WithBarberId(barberId)
             .Build();
-        
+
         // Act
         appointment.Accept(barberId);
         var act = () => appointment.Accept(barberId);
-        
+
         // Arrange
         act.Should().Throw<AppointmentStatusTransitionException>();
         appointment.Status.Should().Be(AppointmentStatus.Accepted);
     }
+
     #endregion
-    
+
     #region Start Method
 
     [Fact]
@@ -93,15 +95,15 @@ public class AppointmentTests
     {
         // Arrange
         var barberId = Guid.NewGuid();
-        
+
         var appointment = new AppointmentBuilder()
             .WithBarberId(barberId)
             .Build();
-        
+
         // Act 
         appointment.Accept(barberId);
         appointment.Start(barberId);
-        
+
         // Assert
         appointment.Status.Should().Be(AppointmentStatus.InProgress);
     }
@@ -111,15 +113,15 @@ public class AppointmentTests
     {
         // Arrange
         var barberId = Guid.NewGuid();
-        
+
         var appointment = new AppointmentBuilder()
             .WithBarberId(barberId)
             .Build();
-        
+
         // Act
         appointment.Accept(barberId);
         var act = () => appointment.Start(Guid.NewGuid());
-        
+
         // Assert
         act.Should().Throw<AppointmentActorNotAllowedException>();
         appointment.Status.Should().Be(AppointmentStatus.Accepted);
@@ -130,21 +132,21 @@ public class AppointmentTests
     {
         // Arrange
         var barberId = Guid.NewGuid();
-        
+
         var appointment = new AppointmentBuilder()
             .WithBarberId(barberId)
             .Build();
-        
+
         // Act
         var act = () => appointment.Start(barberId);
-        
+
         // Assert
         act.Should().Throw<InvalidOperationException>();
         appointment.Status.Should().Be(AppointmentStatus.Pending);
     }
-    
+
     #endregion
-    
+
     #region Complete Method
 
     [Fact]
@@ -161,7 +163,7 @@ public class AppointmentTests
         appointment.Accept(barberId);
         appointment.Start(barberId);
         appointment.Complete(barberId);
-        
+
         // Assert
         appointment.Status.Should().Be(AppointmentStatus.Completed);
     }
@@ -174,12 +176,12 @@ public class AppointmentTests
         var appointment = new AppointmentBuilder()
             .WithBarberId(barberId)
             .Build();
-        
+
         // Act
         appointment.Accept(barberId);
         appointment.Start(barberId);
         var act = () => appointment.Complete(Guid.NewGuid());
-        
+
         // Assert
         act.Should().Throw<AppointmentActorNotAllowedException>();
         appointment.Status.Should().Be(AppointmentStatus.InProgress);
@@ -190,22 +192,22 @@ public class AppointmentTests
     {
         // Arrange
         var barberId = Guid.NewGuid();
-        
+
         var appointment = new AppointmentBuilder()
             .WithBarberId(barberId)
             .Build();
-        
+
         // Act
         appointment.Accept(barberId);
         var act = () => appointment.Complete(barberId);
-        
+
         // Assert 
         act.Should().Throw<InvalidOperationException>();
         appointment.Status.Should().Be(AppointmentStatus.Accepted);
     }
-    
+
     #endregion
-    
+
     #region Reject Method
 
     [Fact]
@@ -213,14 +215,14 @@ public class AppointmentTests
     {
         // Arrange
         var barberId = Guid.NewGuid();
-        
+
         var appointment = new AppointmentBuilder()
             .WithBarberId(barberId)
             .Build();
-        
+
         // Act
         appointment.Reject(barberId);
-        
+
         // Assert
         appointment.Status.Should().Be(AppointmentStatus.Rejected);
     }
@@ -230,14 +232,14 @@ public class AppointmentTests
     {
         // Arrange
         var barberId = Guid.NewGuid();
-        
+
         var appointment = new AppointmentBuilder()
             .WithBarberId(barberId)
             .Build();
-        
+
         // Act
         var act = () => appointment.Reject(Guid.NewGuid());
-        
+
         // Assert
         act.Should().Throw<AppointmentActorNotAllowedException>();
         appointment.Status.Should().Be(AppointmentStatus.Pending);
@@ -248,22 +250,22 @@ public class AppointmentTests
     {
         // Arrange
         var barberId = Guid.NewGuid();
-        
+
         var appointment = new AppointmentBuilder()
             .WithBarberId(barberId)
             .Build();
-        
+
         // Act
         appointment.Accept(barberId);
         var act = () => appointment.Reject(barberId);
-        
+
         // Assert
         act.Should().Throw<InvalidOperationException>();
         appointment.Status.Should().Be(AppointmentStatus.Accepted);
     }
-    
+
     #endregion
-    
+
     #region Cancel Method
 
     [Fact]
@@ -273,20 +275,20 @@ public class AppointmentTests
         var barberId = Guid.NewGuid();
         var dateTime = DateTime.UtcNow;
         var utcNow = dateTime.AddHours(-3);
-        
+
         var appointment = new AppointmentBuilder()
             .WithBarberId(barberId)
             .WithScheduledAtUtc(dateTime)
             .Build();
-        
+
         // Act
         appointment.Accept(barberId);
         appointment.Cancel(barberId, utcNow);
-        
+
         // Assert
         appointment.Status.Should().Be(AppointmentStatus.Cancelled);
     }
-    
+
     [Fact]
     public void Cancel_DeveAlterarStatusParaCancel_QuandoClientIdEStatusEHorarioSaoValidos()
     {
@@ -295,17 +297,17 @@ public class AppointmentTests
         var clientId = Guid.NewGuid();
         var dateTime = DateTime.UtcNow;
         var utcNow = dateTime.AddHours(-3);
-        
+
         var appointment = new AppointmentBuilder()
             .WithBarberId(barberId)
             .WithClientId(clientId)
             .WithScheduledAtUtc(dateTime)
             .Build();
-        
+
         // Act
         appointment.Accept(barberId);
         appointment.Cancel(clientId, utcNow);
-        
+
         // Assert
         appointment.Status.Should().Be(AppointmentStatus.Cancelled);
     }
@@ -318,17 +320,17 @@ public class AppointmentTests
         var clientId = Guid.NewGuid();
         var dateTime = DateTime.UtcNow;
         var utcNow = dateTime.AddHours(-3);
-        
+
         var appointment = new AppointmentBuilder()
             .WithBarberId(barberId)
             .WithClientId(clientId)
             .WithScheduledAtUtc(dateTime)
             .Build();
-        
+
         // Act
         appointment.Accept(barberId);
         var act = () => appointment.Cancel(Guid.NewGuid(), utcNow);
-        
+
         // Assert
         act.Should().Throw<ArgumentException>();
         appointment.Status.Should().Be(AppointmentStatus.Accepted);
@@ -342,17 +344,17 @@ public class AppointmentTests
         var clientId = Guid.NewGuid();
         var dateTime = DateTime.UtcNow;
         var utcNow = dateTime.AddHours(-1);
-        
+
         var appointment = new AppointmentBuilder()
             .WithBarberId(barberId)
             .WithClientId(clientId)
             .WithScheduledAtUtc(dateTime)
             .Build();
-        
+
         // Act
         appointment.Accept(barberId);
         var act = () => appointment.Cancel(clientId, utcNow);
-        
+
         // Assert
         act.Should().Throw<InvalidOperationException>();
         appointment.Status.Should().Be(AppointmentStatus.Accepted);
@@ -366,22 +368,23 @@ public class AppointmentTests
         var clientId = Guid.NewGuid();
         var dateTime = DateTime.UtcNow;
         var utcNow = dateTime.AddHours(-3);
-        
+
         var appointment = new AppointmentBuilder()
             .WithBarberId(barberId)
             .WithClientId(clientId)
             .WithScheduledAtUtc(dateTime)
             .Build();
-        
+
         // Act
         appointment.Accept(barberId);
         appointment.Start(barberId);
         appointment.Complete(barberId);
         var act = () => appointment.Cancel(clientId, utcNow);
-        
+
         // Assert
         act.Should().Throw<InvalidOperationException>();
         appointment.Status.Should().Be(AppointmentStatus.Completed);
     }
+
     #endregion
 }

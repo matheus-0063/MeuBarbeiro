@@ -1,5 +1,4 @@
 using FluentAssertions;
-using FluentValidation.Results;
 using MeuBarbeiro.Application.Abstractions.Persistence;
 using MeuBarbeiro.Application.DTOs.Services;
 using MeuBarbeiro.Application.Services;
@@ -12,8 +11,8 @@ namespace MeuBarbeiro.UnitTests.Application.Services;
 public class ServicesServiceTests
 {
     private readonly Mock<IBarbershopRepository> _barbershopRepositoryMock = new();
-    private readonly Mock<IServiceOfferingRepository> _serviceOfferingRepositoryMock = new();
     private readonly ServicesService _service;
+    private readonly Mock<IServiceOfferingRepository> _serviceOfferingRepositoryMock = new();
 
     public ServicesServiceTests()
     {
@@ -36,7 +35,7 @@ public class ServicesServiceTests
             .WithDurationMinutes(40)
             .Build();
 
-        var services = new List<ServiceOffering>() { serviceOffering };
+        var services = new List<ServiceOffering> { serviceOffering };
 
         _barbershopRepositoryMock.Setup(b => b.GetByIdAsync(barbershop.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(barbershop);
@@ -118,7 +117,7 @@ public class ServicesServiceTests
 
     private static CreateServicesRequestDto CreateAddServicesRequestDto()
     {
-        return new CreateServicesRequestDto()
+        return new CreateServicesRequestDto
         {
             Description = "Corte completo da preferencia do cliente.",
             DurationMinutes = 40,

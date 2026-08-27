@@ -14,11 +14,9 @@ public class JwtTokenService(IConfiguration configuration) : IJwtTokenService
     public string GenerateToken(User user)
     {
         var jwtSettings = configuration.GetSection("Jwt").Get<JwtSettings>();
-        
+
         if (string.IsNullOrWhiteSpace(jwtSettings!.SecretKey))
-        {
             throw new InvalidOperationException("A chave JWT não foi configurada.");
-        }
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings!.SecretKey));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
@@ -33,13 +31,13 @@ public class JwtTokenService(IConfiguration configuration) : IJwtTokenService
         };
 
         var token = new JwtSecurityToken(
-            issuer: jwtSettings.Issuer,
-            audience: jwtSettings.Audience,
-            claims: claims,
+            jwtSettings.Issuer,
+            jwtSettings.Audience,
+            claims,
             expires: DateTime.UtcNow.AddMinutes(jwtSettings.ExpirationMinutes),
             signingCredentials: credentials
         );
-        
+
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 }

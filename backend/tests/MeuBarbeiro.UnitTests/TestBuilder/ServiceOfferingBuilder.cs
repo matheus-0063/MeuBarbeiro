@@ -5,10 +5,10 @@ namespace MeuBarbeiro.UnitTests.TestBuilder;
 public class ServiceOfferingBuilder
 {
     private Guid _barbershopId = Guid.NewGuid();
-    private string _name = String.Empty;
-    private decimal _price = Decimal.Zero;
-    private string _description = String.Empty;
+    private string _description = string.Empty;
     private int _durationMinutes = 1;
+    private string _name = string.Empty;
+    private decimal _price = decimal.Zero;
 
     public ServiceOfferingBuilder WithBarbershopId(Guid barbershopId)
     {
@@ -16,7 +16,7 @@ public class ServiceOfferingBuilder
         return this;
     }
 
-    public ServiceOfferingBuilder WithName(String name)
+    public ServiceOfferingBuilder WithName(string name)
     {
         _name = name;
         return this;
@@ -28,7 +28,7 @@ public class ServiceOfferingBuilder
         return this;
     }
 
-    public ServiceOfferingBuilder WithDescription(String description)
+    public ServiceOfferingBuilder WithDescription(string description)
     {
         _description = description;
         return this;
@@ -43,13 +43,13 @@ public class ServiceOfferingBuilder
     public ServiceOffering Build()
     {
         var serviceOffering = new ServiceOffering(
-            barbershopId: _barbershopId,
-            name: _name,
+            _barbershopId,
+            _name,
             price: _price,
             description: _description,
             durationMinutes: _durationMinutes
         );
-        
+
         return serviceOffering;
     }
 }

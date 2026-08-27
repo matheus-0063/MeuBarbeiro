@@ -5,11 +5,11 @@ namespace MeuBarbeiro.UnitTests.TestBuilder;
 
 public class UserBuilder
 {
-    private string _name = string.Empty;
-    private string _email = string.Empty;
-    private string _passwordHash = string.Empty;
-    private UserRole _role = default;
     private DateTime _createdAt = DateTime.Now;
+    private string _email = string.Empty;
+    private string _name = string.Empty;
+    private string _passwordHash = string.Empty;
+    private UserRole _role;
 
     public UserBuilder WithName(string name)
     {
@@ -38,11 +38,11 @@ public class UserBuilder
     public User Build()
     {
         var user = new User(
-            name: _name,
-            email: _email,
-            passwordHash: _passwordHash,
-            role: _role);
-        
+            _name,
+            _email,
+            _passwordHash,
+            _role);
+
         return user;
     }
 }

@@ -1,5 +1,5 @@
-using FluentValidation.Results;
 using System.Security.Claims;
+using FluentValidation.Results;
 using Microsoft.AspNetCore.Mvc;
 
 namespace MeuBarbeiro.Api.Controllers;
@@ -27,7 +27,8 @@ public abstract class BaseController : ControllerBase
 
     protected void AddProcessError(string? errorMessage, string? propertyName = null)
     {
-        ModelState.AddModelError(propertyName ?? DefaultErrorMessages, errorMessage ?? "Houve um erro inesperado. Contate o suporte!");
+        ModelState.AddModelError(propertyName ?? DefaultErrorMessages,
+            errorMessage ?? "Houve um erro inesperado. Contate o suporte!");
     }
 
     protected void AddProcessError(IEnumerable<string> errorMessage, string? propertyName = null)

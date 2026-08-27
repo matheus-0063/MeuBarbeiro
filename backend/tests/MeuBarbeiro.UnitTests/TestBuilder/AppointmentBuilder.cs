@@ -1,15 +1,14 @@
 using MeuBarbeiro.Domain.Entities;
-using MeuBarbeiro.Domain.Enums;
 
 namespace MeuBarbeiro.UnitTests.TestBuilder;
 
 public class AppointmentBuilder
 {
-    private Guid _clientId = Guid.NewGuid();
     private Guid _barberId = Guid.NewGuid();
     private Guid _barbershopId = Guid.NewGuid();
-    private Guid _serviceId = Guid.NewGuid();
+    private Guid _clientId = Guid.NewGuid();
     private DateTime _scheduledAt = DateTime.UtcNow.AddDays(1);
+    private Guid _serviceId = Guid.NewGuid();
     private decimal _totalPrice = 40.0m;
 
     public AppointmentBuilder WithClientId(Guid clientId)
@@ -51,11 +50,11 @@ public class AppointmentBuilder
     public Appointment Build()
     {
         var appointment = new Appointment(
-            clientId: _clientId,
-            barberId: _barberId,
-            barbershopId: _barbershopId,
-            scheduledAtUtc: _scheduledAt,
-            totalPrice: _totalPrice);
+            _clientId,
+            _barberId,
+            _barbershopId,
+            _scheduledAt,
+            _totalPrice);
 
         return appointment;
     }

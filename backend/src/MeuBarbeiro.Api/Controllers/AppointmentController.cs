@@ -11,7 +11,9 @@ namespace MeuBarbeiro.Api.Controllers;
 
 [ApiVersion("1.0")]
 [Route("api/v{version:apiVersion}/appointment")]
-public class AppointmentController(IAppointmentService appointmentService, IClientRepository clientRepository, 
+public class AppointmentController(
+    IAppointmentService appointmentService,
+    IClientRepository clientRepository,
     IBarberRepository barberRepository) : BaseController
 {
     [Authorize(Roles = "Client")]
@@ -20,30 +22,23 @@ public class AppointmentController(IAppointmentService appointmentService, IClie
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> CreateAppointment([FromBody] CreateAppointmentRequestDto request, CancellationToken cancellationToken)
+    public async Task<IActionResult> CreateAppointment([FromBody] CreateAppointmentRequestDto request,
+        CancellationToken cancellationToken)
     {
-        if (!TryGetAuthenticatedUserId(out var userId))
-        {
-            return Unauthorized();
-        }
+        if (!TryGetAuthenticatedUserId(out var userId)) return Unauthorized();
 
         var client = await clientRepository.GetByUserIdAsync(userId, cancellationToken);
         if (client is null)
-        {
             return NotFound(new ProblemDetails
             {
                 Title = "Perfil de cliente não encontrado."
             });
-        }
 
         var result = await appointmentService.CreateAppointment(request, client.Id, cancellationToken);
 
-        if (ResponseHasErros(result.ValidationResult))
-        {
-            return ValidationProblem();
-        }
+        if (ResponseHasErros(result.ValidationResult)) return ValidationProblem();
 
-        return CreatedAtAction(nameof(GetAppointment), new { version = "1.0", appointmentId = result.Data }, 
+        return CreatedAtAction(nameof(GetAppointment), new { version = "1.0", appointmentId = result.Data },
             new AppointmentIdResponseModel { AppointmentId = result.Data! });
     }
 
@@ -88,12 +83,10 @@ public class AppointmentController(IAppointmentService appointmentService, IClie
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetAppointments([FromQuery] AppointmentStatus? status, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetAppointments([FromQuery] AppointmentStatus? status,
+        CancellationToken cancellationToken)
     {
-        if (!TryGetAuthenticatedUserId(out var userId))
-        {
-            return Unauthorized();
-        }
+        if (!TryGetAuthenticatedUserId(out var userId)) return Unauthorized();
 
         Guid actorId;
         AppointmentUserType userType;
@@ -102,12 +95,10 @@ public class AppointmentController(IAppointmentService appointmentService, IClie
         {
             var client = await clientRepository.GetByUserIdAsync(userId, cancellationToken);
             if (client is null)
-            {
                 return NotFound(new ProblemDetails
                 {
                     Title = "Perfil de cliente não encontrado."
                 });
-            }
 
             actorId = client.Id;
             userType = AppointmentUserType.Client;
@@ -116,18 +107,17 @@ public class AppointmentController(IAppointmentService appointmentService, IClie
         {
             var barber = await barberRepository.GetByUserIdAsync(userId, cancellationToken);
             if (barber is null)
-            {
                 return NotFound(new ProblemDetails
                 {
                     Title = "Perfil de barbeiro não encontrado."
                 });
-            }
 
             actorId = barber.Id;
             userType = AppointmentUserType.Barber;
         }
 
-        var dataValidationResult = await appointmentService.GetListAppointments(actorId, userType, status, cancellationToken);
+        var dataValidationResult =
+            await appointmentService.GetListAppointments(actorId, userType, status, cancellationToken);
 
         return ResponseHasErros(dataValidationResult.ValidationResult)
             ? ValidationProblem()
@@ -145,31 +135,20 @@ public class AppointmentController(IAppointmentService appointmentService, IClie
         [FromBody] CreateAppointmentReviewRequestDto request,
         CancellationToken cancellationToken)
     {
-        if (!TryGetAuthenticatedUserId(out var userId))
-        {
-            return Unauthorized();
-        }
+        if (!TryGetAuthenticatedUserId(out var userId)) return Unauthorized();
 
         var client = await clientRepository.GetByUserIdAsync(userId, cancellationToken);
         if (client is null)
-        {
             return NotFound(new ProblemDetails
             {
                 Title = "Perfil de cliente não encontrado."
             });
-        }
 
         var result = await appointmentService.CreateReview(appointmentId, client.Id, request, cancellationToken);
 
-        if (result.IsNotFound)
-        {
-            return NotFound();
-        }
+        if (result.IsNotFound) return NotFound();
 
-        if (ResponseHasErros(result.ValidationResult))
-        {
-            return ValidationProblem();
-        }
+        if (ResponseHasErros(result.ValidationResult)) return ValidationProblem();
 
         return CreatedAtAction(nameof(GetAppointment), new { version = "1.0", appointmentId }, result.Data);
     }
@@ -185,14 +164,14 @@ public class AppointmentController(IAppointmentService appointmentService, IClie
     public async Task<IActionResult> AcceptAppointment(Guid appointmentId, CancellationToken cancellationToken)
     {
         if (!TryGetAuthenticatedUserId(out var userId)) return Unauthorized();
-        
+
         var result = await appointmentService.AcceptAppointment(appointmentId, userId, cancellationToken);
-        
+
         if (result.IsNotFound) return NotFound();
         if (result.IsForbidden) return Forbid();
-        
-        return ResponseHasErros(result.ValidationResult) 
-            ? ValidationProblem() 
+
+        return ResponseHasErros(result.ValidationResult)
+            ? ValidationProblem()
             : NoContent();
     }
 }

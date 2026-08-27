@@ -12,12 +12,12 @@ public class BarbershopTests
         var barbershop = new BarbershopBuilder()
             .WithOwnerUserId(Guid.NewGuid())
             .Build();
-        
+
         // Assert
         barbershop.Id.Should().NotBeEmpty();
         barbershop.OwnerUserId.Should().Be(barbershop.OwnerUserId);
     }
-    
+
     [Fact]
     public void Barbershop_DeveFalhar_QuandoOwnerUserIdForEmpty()
     {
@@ -25,7 +25,7 @@ public class BarbershopTests
         var func = () => new BarbershopBuilder()
             .WithOwnerUserId(Guid.Empty)
             .Build();
-        
+
         // Assert
         func.Should().Throw<ArgumentException>();
     }
@@ -42,10 +42,10 @@ public class BarbershopTests
         const string newCity = "Betim";
         const string newAddress = "Rua Padre Lage, 59";
         const string newDescription = "Lorem ipsum dolor sit amet";
-        
+
         // Act
         barbershop.UpdateDetails(newName, newCity, newAddress, newDescription);
-        
+
         // Assert
         barbershop.Name.Should().Be(newName);
         barbershop.City.Should().Be(newCity);
@@ -63,10 +63,10 @@ public class BarbershopTests
         var barbershop = new BarbershopBuilder()
             .WithOwnerUserId(Guid.NewGuid())
             .Build();
-        
+
         // Act 
         var act = () => barbershop.UpdateAverageRating(avaliacao);
-        
+
         // Assert
         act.Should().Throw<ArgumentOutOfRangeException>();
     }
@@ -81,13 +81,11 @@ public class BarbershopTests
         var barbershop = new BarbershopBuilder()
             .WithOwnerUserId(Guid.NewGuid())
             .Build();
-        
+
         // Act
         barbershop.UpdateAverageRating(avaliacao);
-        
+
         // Assert
         barbershop.AverageRating.Should().Be(avaliacao);
     }
-    
-    
 }

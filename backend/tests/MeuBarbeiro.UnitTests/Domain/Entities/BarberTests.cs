@@ -12,7 +12,7 @@ public class BarberTests
         // Act 
         var barber = new BarberBuilder()
             .Build();
-        
+
         // Assert
         barber.Id.Should().NotBeEmpty();
     }
@@ -24,7 +24,7 @@ public class BarberTests
         var func = () => new BarberBuilder()
             .WithUserId(Guid.Empty)
             .Build();
-        
+
         // Assert
         func.Should().Throw<ArgumentException>();
     }
@@ -39,10 +39,10 @@ public class BarberTests
         var barbershop = new BarbershopBuilder()
             .WithOwnerUserId(Guid.NewGuid())
             .Build();
-        
+
         // Act
         barber.AssignBarbershop(barbershop.Id);
-        
+
         // Assert
         barber.BarbershopId.Should().Be(barbershop.Id);
     }
@@ -56,12 +56,12 @@ public class BarberTests
 
         // Act
         var func = () => barber.AssignBarbershop(Guid.Empty);
-        
+
         // Assert
         func.Should().Throw<ArgumentException>();
     }
-    
-    
+
+
     [Fact]
     public void AssignBarbershop_DeveFalhar_QuandoBarbershopIdJaTenhaValor()
     {
@@ -72,11 +72,11 @@ public class BarberTests
         var barbershop = new BarbershopBuilder()
             .WithOwnerUserId(Guid.NewGuid())
             .Build();
-        
+
         // Act
         barber.AssignBarbershop(barbershop.Id);
         var func = () => barber.AssignBarbershop(Guid.NewGuid());
-        
+
         // Assert
         func.Should().Throw<BarberBelongsAnotherBarbershopException>();
     }
@@ -87,34 +87,34 @@ public class BarberTests
         // Arrange
         var barber = new BarberBuilder()
             .Build();
-        
+
         var barbershop = new BarbershopBuilder()
             .WithOwnerUserId(Guid.NewGuid())
             .Build();
-        
+
         // Act
         barber.AssignBarbershop(barbershop.Id);
         barber.RemoveFromBarbershop(barbershop.Id);
-        
+
         // Assert
         barber.BarbershopId.Should().BeNull();
     }
-    
+
     [Fact]
     public void RemoveBarbershop_DeveFalhar_QuandoValoresValidos()
     {
         // Arrange
         var barber = new BarberBuilder()
             .Build();
-        
+
         var barbershop = new BarbershopBuilder()
             .WithOwnerUserId(Guid.NewGuid())
             .Build();
-        
+
         // Act
         barber.AssignBarbershop(barbershop.Id);
         var func = () => barber.RemoveFromBarbershop(Guid.Empty);
-        
+
         // Assert
         func.Should().Throw<ArgumentException>();
     }
@@ -125,15 +125,15 @@ public class BarberTests
         // Arrange
         var barber = new BarberBuilder()
             .Build();
-        
+
         var barbershop = new BarbershopBuilder()
             .WithOwnerUserId(Guid.NewGuid())
             .Build();
-        
+
         // Act
         barber.AssignBarbershop(Guid.NewGuid());
         var func = () => barber.RemoveFromBarbershop(barbershop.Id);
-        
+
         // Assert
         func.Should().Throw<BarberDoesNotBelongBarbershopException>();
     }

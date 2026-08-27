@@ -5,9 +5,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace MeuBarbeiro.Infrastructure.Persistence.Repositories;
 
-public class SqliteAppointmentServiceSelectionRepository(AppDbContext dbContext) : IAppointmentServiceSelectionRepository
+public class SqliteAppointmentServiceSelectionRepository(AppDbContext dbContext)
+    : IAppointmentServiceSelectionRepository
 {
-    public async Task<ValidationResult> AddRangeAsync(IEnumerable<AppointmentServiceSelection> selections, CancellationToken cancellationToken = default)
+    public async Task<ValidationResult> AddRangeAsync(IEnumerable<AppointmentServiceSelection> selections,
+        CancellationToken cancellationToken = default)
     {
         dbContext.Set<AppointmentServiceSelection>().AddRange(selections);
         await dbContext.SaveChangesAsync(cancellationToken);
@@ -15,7 +17,8 @@ public class SqliteAppointmentServiceSelectionRepository(AppDbContext dbContext)
         return new ValidationResult();
     }
 
-    public async Task<IReadOnlyCollection<AppointmentServiceSelection>> ListByAppointmentIdsAsync(IEnumerable<Guid> appointmentIds, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyCollection<AppointmentServiceSelection>> ListByAppointmentIdsAsync(
+        IEnumerable<Guid> appointmentIds, CancellationToken cancellationToken = default)
     {
         var ids = appointmentIds.Distinct().ToArray();
 

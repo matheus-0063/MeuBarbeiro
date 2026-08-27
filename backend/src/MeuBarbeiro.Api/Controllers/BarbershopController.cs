@@ -1,5 +1,4 @@
 using Asp.Versioning;
-using MeuBarbeiro.Application.Abstractions.Persistence;
 using MeuBarbeiro.Application.Abstractions.Services;
 using MeuBarbeiro.Application.DTOs.Barbershop;
 using Microsoft.AspNetCore.Authorization;
@@ -42,10 +41,10 @@ public class BarbershopController(
         if (!TryGetAuthenticatedUserId(out var userId)) return Unauthorized();
 
         var result = await barbershopService.UpdateBarbershop(request, barbershopId, userId, cancellationToken);
-        
+
         if (result.IsNotFound) return NotFound();
         if (result.IsForbidden) return Forbid();
-        
+
         return ResponseHasErros(result.ValidationResult)
             ? ValidationProblem()
             : NoContent();
@@ -63,11 +62,12 @@ public class BarbershopController(
     {
         if (!TryGetAuthenticatedUserId(out var userId)) return Unauthorized();
 
-        var result = await barbershopService.LinkBaberToTheBarbershop(barbershopId, barberId, userId, cancellationToken);
+        var result =
+            await barbershopService.LinkBaberToTheBarbershop(barbershopId, barberId, userId, cancellationToken);
 
         if (result.IsNotFound) return NotFound();
         if (result.IsForbidden) return Forbid();
-        
+
         return ResponseHasErros(result.ValidationResult)
             ? ValidationProblem()
             : NoContent();
@@ -85,11 +85,12 @@ public class BarbershopController(
     {
         if (!TryGetAuthenticatedUserId(out var userId)) return Unauthorized();
 
-        var result = await barbershopService.RemoveBarberToBarbershop(barbershopId, barberId, userId, cancellationToken);
+        var result =
+            await barbershopService.RemoveBarberToBarbershop(barbershopId, barberId, userId, cancellationToken);
 
         if (result.IsNotFound) return NotFound();
         if (result.IsForbidden) return Forbid();
-        
+
         return ResponseHasErros(result.ValidationResult)
             ? ValidationProblem()
             : NoContent();
@@ -108,7 +109,7 @@ public class BarbershopController(
         var result = await barbershopService.ListBarbershopsToOwner(userId, cancellationToken);
 
         if (result.IsNotFound) return NotFound();
-        
+
         return ResponseHasErros(result.ValidationResult)
             ? ValidationProblem()
             : Ok(result.Data);
@@ -123,7 +124,7 @@ public class BarbershopController(
     {
         var result = await barbershopService.GetBarbershops(city, cancellationToken);
         if (result.IsNotFound) return NotFound();
-        
+
         return ResponseHasErros(result.ValidationResult)
             ? ValidationProblem()
             : Ok(result.Data);
@@ -133,13 +134,13 @@ public class BarbershopController(
     [ProducesResponseType<IEnumerable<BarbershopResponseDto>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetBarbers(Guid barbershopId, 
+    public async Task<IActionResult> GetBarbers(Guid barbershopId,
         CancellationToken cancellationToken = default)
     {
         var result = await barbershopService.ListBarbersToBarbershop(barbershopId, cancellationToken);
-        
+
         if (result.IsNotFound) return NotFound();
-        
+
         return ResponseHasErros(result.ValidationResult)
             ? ValidationProblem()
             : Ok(result.Data);

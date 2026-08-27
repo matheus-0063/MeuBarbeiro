@@ -19,7 +19,8 @@ public class SqliteClientRepository(AppDbContext dbContext) : IClientRepository
             .FirstOrDefaultAsync(client => client.UserId == userId, cancellationToken);
     }
 
-    public async Task<IReadOnlyCollection<Client>> ListByIdsAsync(IEnumerable<Guid> clientIds, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyCollection<Client>> ListByIdsAsync(IEnumerable<Guid> clientIds,
+        CancellationToken cancellationToken = default)
     {
         var ids = clientIds.Distinct().ToArray();
 

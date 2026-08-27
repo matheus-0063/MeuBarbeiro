@@ -15,9 +15,9 @@ public class BarberBuilder
     public Barber Build()
     {
         var barber = new Barber(
-            userId: _userId
+            _userId
         );
 
         return barber;
-    } 
-} 
+    }
+}

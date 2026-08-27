@@ -2,8 +2,8 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using FluentAssertions;
-using MeuBarbeiro.Infrastructure.Security.Jwt;
 using MeuBarbeiro.Domain.Enums;
+using MeuBarbeiro.Infrastructure.Security.Jwt;
 using MeuBarbeiro.UnitTests.TestBuilder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
@@ -12,12 +12,11 @@ namespace MeuBarbeiro.UnitTests.Infrastructure.Services;
 
 public class JwtTokenServiceTests
 {
-    private readonly JwtTokenService _jwtTokenService;
-
     private const string Issuer = "MeuBarbeiro.Api";
     private const string Audience = "MeuBarbeiro.App";
     private const string SecretKey = "chave-ficticia-exclusiva-para-testes-com-pelo-menos-32-bytes";
     private const int ExpirationMinutes = 120;
+    private readonly JwtTokenService _jwtTokenService;
 
     public JwtTokenServiceTests()
     {
@@ -35,7 +34,7 @@ public class JwtTokenServiceTests
 
     [Fact]
     public void GenerateToken_DeveRetornarTokenNaoVazio_QuandoUsuarioForValido()
-    {   
+    {
         // Arrange
         var user = new UserBuilder()
             .WithName("Matheus")
@@ -43,10 +42,10 @@ public class JwtTokenServiceTests
             .WithPasswordHash("senha-hash")
             .WithRole(UserRole.Client)
             .Build();
-        
+
         // Act
         var token = _jwtTokenService.GenerateToken(user);
-        
+
         // Assert
         token.Should().NotBeNullOrEmpty();
     }
@@ -63,10 +62,10 @@ public class JwtTokenServiceTests
             .Build();
 
         var tokenHandler = new JwtSecurityTokenHandler();
-        
+
         // Act
         var token = _jwtTokenService.GenerateToken(user);
-        
+
         // Assert
         tokenHandler.CanReadToken(token).Should().BeTrue();
     }
@@ -85,7 +84,7 @@ public class JwtTokenServiceTests
         // Act
         var token = _jwtTokenService.GenerateToken(user);
         var jwt = new JwtSecurityTokenHandler().ReadJwtToken(token);
-        
+
         // Assert
         var subClaim = jwt.Claims.First(c => c.Type == JwtRegisteredClaimNames.Sub).Value;
         subClaim.Should().Be(user.Id.ToString());
@@ -95,9 +94,9 @@ public class JwtTokenServiceTests
     public void GenerateToken_DeveConterUserIdNaClaimNameIdentifier_QuandoTokenForGerado()
     {
         // Arrange
-        
+
         // Act
-        
+
         // Assert
     }
 
@@ -105,9 +104,9 @@ public class JwtTokenServiceTests
     public void GenerateToken_DeveConterNomeDoUsuario_QuandoTokenForGerado()
     {
         // Arrange
-        
+
         // Act
-        
+
         // Assert
     }
 
@@ -124,8 +123,8 @@ public class JwtTokenServiceTests
 
         // Act
         var token = _jwtTokenService.GenerateToken(user);
-        var jwt = new JwtSecurityTokenHandler().ReadJwtToken(token);        
-        
+        var jwt = new JwtSecurityTokenHandler().ReadJwtToken(token);
+
         // Assert
         var emailClaim = jwt.Claims.First(c => c.Type == ClaimTypes.Email);
         emailClaim.Value.Should().Be(user.Email);
@@ -143,11 +142,11 @@ public class JwtTokenServiceTests
             .WithPasswordHash("senha-hash")
             .WithRole(UserRole.Client)
             .Build();
-        
+
         // Act
         var token = _jwtTokenService.GenerateToken(user);
         var jwt = new JwtSecurityTokenHandler().ReadJwtToken(token);
-        
+
         // Assert
         var roleClaim = jwt.Claims.First(c => c.Type == ClaimTypes.Role);
         roleClaim.Value.Should().Be(user.Role.ToString());
@@ -163,11 +162,11 @@ public class JwtTokenServiceTests
             .WithPasswordHash("senha-hash")
             .WithRole(UserRole.Client)
             .Build();
-        
+
         // Act
         var token = _jwtTokenService.GenerateToken(user);
         var jwt = new JwtSecurityTokenHandler().ReadJwtToken(token);
-        
+
         // Assert
         jwt.Issuer.Should().Be(Issuer);
     }
@@ -182,11 +181,11 @@ public class JwtTokenServiceTests
             .WithPasswordHash("senha-hash")
             .WithRole(UserRole.Client)
             .Build();
-        
+
         // Act
         var token = _jwtTokenService.GenerateToken(user);
         var jwt = new JwtSecurityTokenHandler().ReadJwtToken(token);
-        
+
         // Assert
         jwt.Audiences.First().Should().Be(Audience);
     }
@@ -195,9 +194,9 @@ public class JwtTokenServiceTests
     public void GenerateToken_DeveDefinirExpiracaoFutura_QuandoTokenForGerado()
     {
         // Arrange
-        
+
         // Act
-        
+
         // Assert
     }
 
@@ -205,9 +204,9 @@ public class JwtTokenServiceTests
     public void GenerateToken_DeveRespeitarTempoDeExpiracaoConfigurado_QuandoTokenForGerado()
     {
         // Arrange
-        
+
         // Act
-        
+
         // Assert
     }
 
@@ -215,9 +214,9 @@ public class JwtTokenServiceTests
     public void GenerateToken_DeveAssinarTokenComHmacSha256_QuandoTokenForGerado()
     {
         // Arrange
-        
+
         // Act
-        
+
         // Assert
     }
 
@@ -261,9 +260,9 @@ public class JwtTokenServiceTests
     public void GenerateToken_DeveFalhar_QuandoSecaoJwtNaoExistir()
     {
         // Arrange
-        
+
         // Act
-        
+
         // Assert
     }
 
@@ -271,9 +270,9 @@ public class JwtTokenServiceTests
     public void GenerateToken_DeveFalhar_QuandoSecretKeyForNulaOuVazia()
     {
         // Arrange
-        
+
         // Act
-        
+
         // Assert
     }
 
@@ -281,9 +280,9 @@ public class JwtTokenServiceTests
     public void GenerateToken_DeveFalhar_QuandoSecretKeyForCurtaDemais()
     {
         // Arrange
-        
+
         // Act
-        
+
         // Assert
     }
 }

@@ -11,7 +11,7 @@ public class ClientTests
         // Act
         var client = new ClientBuilder()
             .Build();
-        
+
         // Assert
         client.Id.Should().NotBeEmpty();
     }
@@ -21,12 +21,12 @@ public class ClientTests
     {
         // Arrange
         var userId = Guid.NewGuid();
-        
+
         // Act
         var client = new ClientBuilder()
             .WithUserId(userId)
             .Build();
-        
+
         // Assert
         client.UserId.Should().Be(userId);
     }
@@ -38,7 +38,7 @@ public class ClientTests
         var func = () => new ClientBuilder()
             .WithUserId(Guid.Empty)
             .Build();
-        
+
         // Assert
         func.Should().Throw<ArgumentException>();
     }

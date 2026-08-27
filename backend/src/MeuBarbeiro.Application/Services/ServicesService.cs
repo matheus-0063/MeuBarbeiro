@@ -71,7 +71,7 @@ public class ServicesService(
         {
             return DomainFailure(ex);
         }
-        
+
         await serviceOfferingRepository.UpdateAsync(service, cancellationToken);
         return ServiceResult<ServiceResponseDto>.Success(service.ToResponseDto());
     }

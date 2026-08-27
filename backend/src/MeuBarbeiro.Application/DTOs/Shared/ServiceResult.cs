@@ -4,15 +4,15 @@ namespace MeuBarbeiro.Application.DTOs.Shared;
 
 public class ServiceResult
 {
-    public ValidationResult ValidationResult { get; protected init; } = new ValidationResult();
+    protected ServiceResult()
+    {
+    }
+
+    public ValidationResult ValidationResult { get; protected init; } = new();
     public bool IsNotFound { get; protected init; }
     public bool IsForbidden { get; protected init; }
     public bool IsValid => ValidationResult.IsValid;
     public bool IsSuccess { get; protected init; }
-
-    protected ServiceResult()
-    {
-    }
 
     public static ServiceResult NotFound()
     {
@@ -23,7 +23,7 @@ public class ServiceResult
     {
         return new ServiceResult { IsForbidden = true };
     }
-    
+
     public static ServiceResult Success()
     {
         return new ServiceResult { IsSuccess = true };
@@ -60,7 +60,7 @@ public class ServiceResult<T> : ServiceResult
     {
         return new ServiceResult<T>
         {
-            ValidationResult = validationResult,
+            ValidationResult = validationResult
         };
     }
 

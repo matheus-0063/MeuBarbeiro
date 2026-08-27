@@ -7,13 +7,15 @@ namespace MeuBarbeiro.Infrastructure.Persistence.Repositories;
 
 public class SqliteReviewRepository(AppDbContext dbContext) : IReviewRepository
 {
-    public async Task<Review?> GetByAppointmentIdAsync(Guid appointmentId, CancellationToken cancellationToken = default)
+    public async Task<Review?> GetByAppointmentIdAsync(Guid appointmentId,
+        CancellationToken cancellationToken = default)
     {
         return await dbContext.Reviews
             .FirstOrDefaultAsync(review => review.AppointmentId == appointmentId, cancellationToken);
     }
 
-    public async Task<IReadOnlyCollection<Review>> ListByAppointmentIdsAsync(IEnumerable<Guid> appointmentIds, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyCollection<Review>> ListByAppointmentIdsAsync(IEnumerable<Guid> appointmentIds,
+        CancellationToken cancellationToken = default)
     {
         var ids = appointmentIds.Distinct().ToArray();
 
@@ -22,17 +24,15 @@ public class SqliteReviewRepository(AppDbContext dbContext) : IReviewRepository
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<double?> GetAverageStarsByBarbershopAsync(Guid barbershopId, CancellationToken cancellationToken = default)
+    public async Task<double?> GetAverageStarsByBarbershopAsync(Guid barbershopId,
+        CancellationToken cancellationToken = default)
     {
         var stars = await dbContext.Reviews
             .Where(review => review.BarbershopId == barbershopId)
             .Select(review => (double?)review.Stars)
             .ToListAsync(cancellationToken);
 
-        if (stars.Count == 0)
-        {
-            return null;
-        }
+        if (stars.Count == 0) return null;
 
         return stars.Average();
     }

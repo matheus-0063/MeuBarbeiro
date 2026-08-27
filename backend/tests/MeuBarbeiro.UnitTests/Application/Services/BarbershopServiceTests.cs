@@ -10,17 +10,17 @@ namespace MeuBarbeiro.UnitTests.Application.Services;
 
 public class BarbershopServiceTests
 {
-    private readonly Mock<IBarbershopRepository> _mockBarbershopRepository;
-    private readonly Mock<IBarberRepository> _mockBarberRepository;
-    private readonly Mock<IUserRepository> _mockUserRepository;
     private readonly BarbershopService _barbershopService;
+    private readonly Mock<IBarberRepository> _mockBarberRepository;
+    private readonly Mock<IBarbershopRepository> _mockBarbershopRepository;
+    private readonly Mock<IUserRepository> _mockUserRepository;
 
     public BarbershopServiceTests()
     {
         _mockBarbershopRepository = new Mock<IBarbershopRepository>();
         _mockBarberRepository = new Mock<IBarberRepository>();
         _mockUserRepository = new Mock<IUserRepository>();
-        
+
         _barbershopService = new BarbershopService(_mockBarbershopRepository.Object, _mockBarberRepository.Object,
             _mockUserRepository.Object);
     }
@@ -38,10 +38,10 @@ public class BarbershopServiceTests
         var result = await _barbershopService.CreateBarbershop(request, barbershopOwnerId);
 
         // Assert
-        
+
         result.Data.Should().NotBeNull();
         result.ValidationResult.IsValid.Should().BeTrue();
-        
+
         result.Data.Name.Should().BeEquivalentTo(request.Name);
         result.Data.City.Should().BeEquivalentTo(request.City);
         result.Data.Address.Should().BeEquivalentTo(request.Address);
@@ -193,7 +193,7 @@ public class BarbershopServiceTests
             Name = "Barbearia BH",
             City = "Belo Horizonte",
             Address = "R. Ilacir Pereira Lima, 539 - Silveira, Belo Horizonte - MG, 31140-540",
-            Description = "Melhor barbearia de Belo Horizonte",
+            Description = "Melhor barbearia de Belo Horizonte"
         };
     }
 }

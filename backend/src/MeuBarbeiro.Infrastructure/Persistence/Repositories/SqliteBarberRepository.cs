@@ -1,4 +1,3 @@
-using FluentValidation.Results;
 using MeuBarbeiro.Application.Abstractions.Persistence;
 using MeuBarbeiro.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -19,7 +18,8 @@ public class SqliteBarberRepository(AppDbContext dbContext) : IBarberRepository
             .FirstOrDefaultAsync(barber => barber.UserId == userId, cancellationToken);
     }
 
-    public async Task<IReadOnlyCollection<Barber>> ListByBarbershopAsync(Guid barbershopId, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyCollection<Barber>> ListByBarbershopAsync(Guid barbershopId,
+        CancellationToken cancellationToken = default)
     {
         return await dbContext.Barbers
             .Where(barber => barber.BarbershopId == barbershopId)

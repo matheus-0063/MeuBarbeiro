@@ -25,20 +25,11 @@ public class EventProcessingAuditController(AppDbContext dbContext) : BaseContro
             .AsNoTracking()
             .AsQueryable();
 
-        if (!string.IsNullOrWhiteSpace(eventName))
-        {
-            query = query.Where(audit => audit.EventName == eventName);
-        }
+        if (!string.IsNullOrWhiteSpace(eventName)) query = query.Where(audit => audit.EventName == eventName);
 
-        if (!string.IsNullOrWhiteSpace(queueName))
-        {
-            query = query.Where(audit => audit.QueueName == queueName);
-        }
+        if (!string.IsNullOrWhiteSpace(queueName)) query = query.Where(audit => audit.QueueName == queueName);
 
-        if (!string.IsNullOrWhiteSpace(status))
-        {
-            query = query.Where(audit => audit.Status == status);
-        }
+        if (!string.IsNullOrWhiteSpace(status)) query = query.Where(audit => audit.Status == status);
 
         var audits = await query
             .OrderByDescending(audit => audit.ProcessedAtUtc)

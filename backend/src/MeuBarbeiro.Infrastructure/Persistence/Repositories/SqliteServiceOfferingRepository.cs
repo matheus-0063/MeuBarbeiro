@@ -1,4 +1,3 @@
-using FluentValidation.Results;
 using MeuBarbeiro.Application.Abstractions.Persistence;
 using MeuBarbeiro.Domain.Entities;
 using Microsoft.EntityFrameworkCore;

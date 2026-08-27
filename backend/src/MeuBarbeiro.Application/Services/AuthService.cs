@@ -1,5 +1,5 @@
-using MeuBarbeiro.Application.Abstractions.Services;
 using MeuBarbeiro.Application.Abstractions.Persistence;
+using MeuBarbeiro.Application.Abstractions.Services;
 using MeuBarbeiro.Application.DTOs.Auth;
 using MeuBarbeiro.Application.DTOs.Barbers;
 using MeuBarbeiro.Application.DTOs.Clients;
@@ -59,12 +59,12 @@ public class AuthService(
     {
         var existingUser = await userRepository.GetByEmailAsync(request.Email, cancellationToken);
         if (existingUser is not null) throw new EmailAlreadyRegisteredException(request.Email);
-        
+
         var passwordHash = passwordHasher.Hash(request.Password);
-        
-        var user = new User (request.Name, request.Email, passwordHash, UserRole.Barber);
+
+        var user = new User(request.Name, request.Email, passwordHash, UserRole.Barber);
         await userRepository.AddAsync(user, cancellationToken);
-        
+
         var token = jwtTokenService.GenerateToken(user);
         return CreateAuthResponse(user, token);
     }

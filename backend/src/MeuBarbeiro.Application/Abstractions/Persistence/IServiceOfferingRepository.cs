@@ -1,4 +1,3 @@
-using FluentValidation.Results;
 using MeuBarbeiro.Domain.Entities;
 
 namespace MeuBarbeiro.Application.Abstractions.Persistence;

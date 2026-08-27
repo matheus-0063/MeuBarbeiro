@@ -1,14 +1,12 @@
 using System.Text;
 using Asp.Versioning;
 using MeuBarbeiro.Application;
-using MeuBarbeiro.Application.Abstractions.Services;
-using MeuBarbeiro.Application.Services;
 using MeuBarbeiro.Infrastructure;
 using MeuBarbeiro.Infrastructure.Messaging;
 using MeuBarbeiro.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.OpenApi.Models;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 var jwtSecretKey = builder.Configuration["Jwt:SecretKey"]!;
@@ -91,10 +89,7 @@ using (var scope = app.Services.CreateScope())
     topologyInitializer.Initialize();
 }
 
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-}
+if (app.Environment.IsDevelopment()) app.MapOpenApi();
 
 app.UseHttpsRedirection();
 app.UseSwagger();

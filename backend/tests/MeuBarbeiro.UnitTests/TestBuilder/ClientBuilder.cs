@@ -15,9 +15,9 @@ public class ClientBuilder
     public Client Build()
     {
         var client = new Client(
-            userId: _userId
+            _userId
         );
-        
+
         return client;
     }
 }
