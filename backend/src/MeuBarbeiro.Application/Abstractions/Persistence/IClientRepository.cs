@@ -11,5 +11,5 @@ public interface IClientRepository
     Task<IReadOnlyCollection<Client>> ListByIdsAsync(IEnumerable<Guid> clientIds,
         CancellationToken cancellationToken = default);
 
-    Task<ValidationResult> AddAsync(Client client, CancellationToken cancellationToken = default);
+    Task AddAsync(Client client, CancellationToken cancellationToken = default);
 }

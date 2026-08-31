@@ -11,5 +11,5 @@ public interface IReviewRepository
         CancellationToken cancellationToken = default);
 
     Task<double?> GetAverageStarsByBarbershopAsync(Guid barbershopId, CancellationToken cancellationToken = default);
-    Task<ValidationResult> AddAsync(Review review, CancellationToken cancellationToken = default);
+    Task AddAsync(Review review, CancellationToken cancellationToken = default);
 }

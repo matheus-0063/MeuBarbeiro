@@ -37,11 +37,9 @@ public class SqliteReviewRepository(AppDbContext dbContext) : IReviewRepository
         return stars.Average();
     }
 
-    public async Task<ValidationResult> AddAsync(Review review, CancellationToken cancellationToken = default)
+    public async Task AddAsync(Review review, CancellationToken cancellationToken = default)
     {
         dbContext.Reviews.Add(review);
         await dbContext.SaveChangesAsync(cancellationToken);
-
-        return new ValidationResult();
     }
 }

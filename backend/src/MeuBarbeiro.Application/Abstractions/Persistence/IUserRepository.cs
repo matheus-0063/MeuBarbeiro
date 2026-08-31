@@ -11,5 +11,5 @@ public interface IUserRepository
     Task<IReadOnlyCollection<User>> ListByIdsAsync(IEnumerable<Guid> userIds,
         CancellationToken cancellationToken = default);
 
-    Task<ValidationResult> AddAsync(User user, CancellationToken cancellationToken = default);
+    Task AddAsync(User user, CancellationToken cancellationToken = default);
 }

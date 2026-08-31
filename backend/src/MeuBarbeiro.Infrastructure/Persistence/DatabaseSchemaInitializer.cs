@@ -45,6 +45,7 @@ public sealed class DatabaseSchemaInitializer
     private const string CreateBarbershopsTableSql = """
                                                      CREATE TABLE IF NOT EXISTS "Barbershops" (
                                                          "Id" TEXT NOT NULL CONSTRAINT "PK_Barbershops" PRIMARY KEY,
+                                                         "OwnerUserId" TEXT NOT NULL,
                                                          "Name" TEXT NOT NULL,
                                                          "City" TEXT NOT NULL,
                                                          "Address" TEXT NOT NULL,

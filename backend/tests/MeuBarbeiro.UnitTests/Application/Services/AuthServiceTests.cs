@@ -72,12 +72,10 @@ public class AuthServiceTests
             .ReturnsAsync((User?)null);
 
         _userRepositoryMock.Setup(x => x.AddAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
-            .Callback((User user, CancellationToken _) => userAdded = user)
-            .ReturnsAsync(new ValidationResult());
+            .Callback((User user, CancellationToken _) => userAdded = user);
 
         _clientRepositoryMock.Setup(x => x.AddAsync(It.IsAny<Client>(), It.IsAny<CancellationToken>()))
-            .Callback((Client client, CancellationToken _) => clientAdded = client)
-            .ReturnsAsync(new ValidationResult());
+            .Callback((Client client, CancellationToken _) => clientAdded = client);
 
         _jwtTokenServiceMock.Setup(x => x.GenerateToken(It.IsAny<User>()))
             .Returns(expectedToken);
@@ -140,8 +138,7 @@ public class AuthServiceTests
 
         _userRepositoryMock
             .Setup(x => x.AddAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
-            .Callback((User user, CancellationToken _) => userAdded = user)
-            .ReturnsAsync(new ValidationResult());
+            .Callback((User user, CancellationToken _) => userAdded = user);
 
         _barberRepositoryMock
             .Setup(x => x.AddAsync(It.IsAny<Barber>(), It.IsAny<CancellationToken>()))

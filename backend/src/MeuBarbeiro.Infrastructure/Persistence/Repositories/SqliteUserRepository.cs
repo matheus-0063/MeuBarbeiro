@@ -29,11 +29,9 @@ public class SqliteUserRepository(AppDbContext dbContext) : IUserRepository
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<ValidationResult> AddAsync(User user, CancellationToken cancellationToken = default)
+    public async Task AddAsync(User user, CancellationToken cancellationToken = default)
     {
         dbContext.Users.Add(user);
         await dbContext.SaveChangesAsync(cancellationToken);
-
-        return new ValidationResult();
     }
 }

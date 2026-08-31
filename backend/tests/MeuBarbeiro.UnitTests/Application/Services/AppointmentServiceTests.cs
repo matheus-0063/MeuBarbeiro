@@ -101,8 +101,7 @@ public class AppointmentServiceTests
 
         _mockSelectionRepository
             .Setup(x => x.AddRangeAsync(It.IsAny<IEnumerable<AppointmentServiceSelection>>(),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ValidationResult());
+                It.IsAny<CancellationToken>()));
 
         _mockEventPublisher
             .Setup(x => x.PublishAsync(It.IsAny<AppointmentRequestedIntegrationEvent>(), It.IsAny<CancellationToken>()))

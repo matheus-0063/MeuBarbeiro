@@ -29,11 +29,9 @@ public class SqliteClientRepository(AppDbContext dbContext) : IClientRepository
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<ValidationResult> AddAsync(Client client, CancellationToken cancellationToken = default)
+    public async Task AddAsync(Client client, CancellationToken cancellationToken = default)
     {
         dbContext.Clients.Add(client);
         await dbContext.SaveChangesAsync(cancellationToken);
-
-        return new ValidationResult();
     }
 }

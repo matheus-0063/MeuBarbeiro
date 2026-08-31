@@ -8,13 +8,11 @@ namespace MeuBarbeiro.Infrastructure.Persistence.Repositories;
 public class SqliteAppointmentServiceSelectionRepository(AppDbContext dbContext)
     : IAppointmentServiceSelectionRepository
 {
-    public async Task<ValidationResult> AddRangeAsync(IEnumerable<AppointmentServiceSelection> selections,
+    public async Task AddRangeAsync(IEnumerable<AppointmentServiceSelection> selections,
         CancellationToken cancellationToken = default)
     {
         dbContext.Set<AppointmentServiceSelection>().AddRange(selections);
         await dbContext.SaveChangesAsync(cancellationToken);
-
-        return new ValidationResult();
     }
 
     public async Task<IReadOnlyCollection<AppointmentServiceSelection>> ListByAppointmentIdsAsync(

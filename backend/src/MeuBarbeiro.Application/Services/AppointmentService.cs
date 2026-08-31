@@ -34,13 +34,12 @@ public class AppointmentService(
             return ServiceResult<Guid>.Failure(validationResult);
         }
 
-        var barber = await barberRepository.ListByBarbershopAsync(request.BarbershopId, cancellationToken);
-        if (barber.Count == 0)
-        {
-            validationResult.Errors.Add(new ValidationFailure(nameof(request.BarbershopId),
-                "Nao existe barbeiros vinculados a barbearia selecionada."));
+        var barber = await barberRepository.GetByIdAsync(request.BarberId, cancellationToken);
+        if (barber == null)
+            return ServiceResult<Guid>.NotFound();
+
+        if (barber.BarbershopId != request.BarbershopId)
             return ServiceResult<Guid>.Failure(validationResult);
-        }
 
         var selectedServices = await serviceOfferingRepository.ListByIdsAsync(request.ServiceIds, cancellationToken);
         if (selectedServices.Count != request.ServiceIds.Distinct().Count() ||
@@ -52,7 +51,7 @@ public class AppointmentService(
         }
 
         var totalPrice = selectedServices.Sum(service => service.Price);
-        var appointment = request.ToEntity(clientId, barber.First().Id, totalPrice);
+        var appointment = request.ToEntity(clientId, barber.Id, totalPrice);
 
         await appointmentRepository.AddAsync(appointment, cancellationToken);
 
@@ -65,9 +64,7 @@ public class AppointmentService(
             })
             .ToArray();
 
-        var selectionValidationResult =
-            await appointmentServiceSelectionRepository.AddRangeAsync(selections, cancellationToken);
-        if (!selectionValidationResult.IsValid) return ServiceResult<Guid>.Failure(selectionValidationResult);
+        await appointmentServiceSelectionRepository.AddRangeAsync(selections, cancellationToken);
 
         await eventPublisher.PublishAsync(new AppointmentRequestedIntegrationEvent(
             appointment.Id,
@@ -132,9 +129,7 @@ public class AppointmentService(
             CreatedAtUtc = DateTime.UtcNow
         };
 
-        var addValidationResult = await reviewRepository.AddAsync(review, cancellationToken);
-        if (!addValidationResult.IsValid)
-            return ServiceResult<AppointmentReviewResponseDto>.Failure(addValidationResult);
+        await reviewRepository.AddAsync(review, cancellationToken);
 
         var barbershop = await barbershopRepository.GetByIdAsync(appointment.BarbershopId, cancellationToken);
         if (barbershop != null)
