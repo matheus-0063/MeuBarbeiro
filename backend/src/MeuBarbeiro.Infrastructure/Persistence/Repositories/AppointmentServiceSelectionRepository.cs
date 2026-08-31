@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace MeuBarbeiro.Infrastructure.Persistence.Repositories;
 
-public class SqliteAppointmentServiceSelectionRepository(AppDbContext dbContext)
+public class AppointmentServiceSelectionRepository(AppDbContext dbContext)
     : IAppointmentServiceSelectionRepository
 {
     public async Task AddRangeAsync(IEnumerable<AppointmentServiceSelection> selections,

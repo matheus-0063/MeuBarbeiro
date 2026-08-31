@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace MeuBarbeiro.Infrastructure.Persistence.Repositories;
 
-public class SqliteClientRepository(AppDbContext dbContext) : IClientRepository
+public class ClientRepository(AppDbContext dbContext) : IClientRepository
 {
     public async Task<Client?> GetByIdAsync(Guid clientId, CancellationToken cancellationToken = default)
     {

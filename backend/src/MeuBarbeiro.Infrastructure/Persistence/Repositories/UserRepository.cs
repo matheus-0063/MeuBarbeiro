@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace MeuBarbeiro.Infrastructure.Persistence.Repositories;
 
-public class SqliteUserRepository(AppDbContext dbContext) : IUserRepository
+public class UserRepository(AppDbContext dbContext) : IUserRepository
 {
     public async Task<User?> GetByIdAsync(Guid userId, CancellationToken cancellationToken = default)
     {
