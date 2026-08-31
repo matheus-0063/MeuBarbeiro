@@ -16,7 +16,6 @@ public class Worker(
     ILogger<Worker> logger,
     IRabbitMqConnectionProvider connectionProvider,
     RabbitMqTopologyInitializer topologyInitializer,
-    DatabaseSchemaInitializer databaseSchemaInitializer,
     IOptions<RabbitMqOptions> options,
     IServiceScopeFactory scopeFactory) : BackgroundService
 {
@@ -27,10 +26,6 @@ public class Worker(
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         topologyInitializer.Initialize();
-
-        using var scope = scopeFactory.CreateScope();
-        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        await databaseSchemaInitializer.EnsureSchemaAsync(dbContext, stoppingToken);
 
         _channel = connectionProvider.CreateChannel();
         _channel.BasicQos(0, 1, false);

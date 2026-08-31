@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace MeuBarbeiro.Infrastructure.Persistence.Repositories;
 
-public class SqliteServiceOfferingRepository(AppDbContext dbContext) : IServiceOfferingRepository
+public class ServiceOfferingRepository(AppDbContext dbContext) : IServiceOfferingRepository
 {
     public async Task<ServiceOffering?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {

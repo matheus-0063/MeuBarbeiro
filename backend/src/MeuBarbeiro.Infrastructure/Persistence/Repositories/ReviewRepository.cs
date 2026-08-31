@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace MeuBarbeiro.Infrastructure.Persistence.Repositories;
 
-public class SqliteReviewRepository(AppDbContext dbContext) : IReviewRepository
+public class ReviewRepository(AppDbContext dbContext) : IReviewRepository
 {
     public async Task<Review?> GetByAppointmentIdAsync(Guid appointmentId,
         CancellationToken cancellationToken = default)

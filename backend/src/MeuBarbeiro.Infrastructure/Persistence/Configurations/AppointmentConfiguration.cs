@@ -22,6 +22,7 @@ public class AppointmentConfiguration : IEntityTypeConfiguration<Appointment>
             .IsRequired();
 
         builder.Property(appointment => appointment.ScheduledAtUtc)
+            .HasColumnType("timestamp with time zone")
             .IsRequired();
 
         builder.Property(appointment => appointment.TotalPrice)

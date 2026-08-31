@@ -28,6 +28,7 @@ public class ReviewConfiguration : IEntityTypeConfiguration<Review>
             .IsRequired();
 
         builder.Property(review => review.CreatedAtUtc)
+            .HasColumnType("timestamp with time zone")
             .IsRequired();
 
         builder.HasIndex(review => review.AppointmentId)

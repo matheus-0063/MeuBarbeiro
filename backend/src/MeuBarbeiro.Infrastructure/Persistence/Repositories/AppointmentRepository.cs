@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace MeuBarbeiro.Infrastructure.Persistence.Repositories;
 
-public class SqliteAppointmentRepository(AppDbContext dbContext) : IAppointmentRepository
+public class AppointmentRepository(AppDbContext dbContext) : IAppointmentRepository
 {
     public async Task<IReadOnlyCollection<Appointment>> ListByBarberAsync(Guid barberId,
         CancellationToken cancellationToken = default)

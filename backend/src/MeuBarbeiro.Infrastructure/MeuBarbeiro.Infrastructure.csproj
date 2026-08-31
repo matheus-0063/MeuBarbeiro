@@ -1,15 +1,21 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.2"/>
-        <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.2"/>
-        <PackageReference Include="Microsoft.Extensions.Identity.Core" Version="10.0.9"/>
-        <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.19.1"/>
-        <PackageReference Include="RabbitMQ.Client" Version="6.8.1"/>
-        <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.19.1"/>
-        <ProjectReference Include="..\MeuBarbeiro.Application\MeuBarbeiro.Application.csproj"/>
-        <ProjectReference Include="..\MeuBarbeiro.Domain\MeuBarbeiro.Domain.csproj"/>
-        <ProjectReference Include="..\MeuBarbeiro.Contracts\MeuBarbeiro.Contracts.csproj"/>
+        <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.5" />
+        <PackageReference Include="Microsoft.Extensions.Identity.Core" Version="10.0.9" />
+        <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.19.1" />
+        <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />
+        <PackageReference Include="RabbitMQ.Client" Version="6.8.1" />
+        <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.19.1" />
+
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.5">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        
+        <ProjectReference Include="..\MeuBarbeiro.Application\MeuBarbeiro.Application.csproj" />
+        <ProjectReference Include="..\MeuBarbeiro.Domain\MeuBarbeiro.Domain.csproj" />
+        <ProjectReference Include="..\MeuBarbeiro.Contracts\MeuBarbeiro.Contracts.csproj" />
     </ItemGroup>
 
     <PropertyGroup>

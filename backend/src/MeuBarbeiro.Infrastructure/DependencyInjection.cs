@@ -17,7 +17,8 @@ public static class DependencyInjection
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddDbContext<AppDbContext>(options =>
-            options.UseSqlite(configuration.GetConnectionString("DefaultConnection")));
+            options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")
+                ?? throw new InvalidOperationException("Connection string 'DefaultConnection' não configurada.")));
 
         services.AddSingleton<DatabaseSchemaInitializer>();
 
@@ -28,14 +29,14 @@ public static class DependencyInjection
 
         services.AddScoped<IEventPublisher, RabbitMqEventPublisher>();
 
-        services.AddScoped<IAppointmentRepository, SqliteAppointmentRepository>();
-        services.AddScoped<IAppointmentServiceSelectionRepository, SqliteAppointmentServiceSelectionRepository>();
-        services.AddScoped<IBarberRepository, SqliteBarberRepository>();
-        services.AddScoped<IBarbershopRepository, SqliteBarbershopRepository>();
-        services.AddScoped<IClientRepository, SqliteClientRepository>();
-        services.AddScoped<IReviewRepository, SqliteReviewRepository>();
-        services.AddScoped<IServiceOfferingRepository, SqliteServiceOfferingRepository>();
-        services.AddScoped<IUserRepository, SqliteUserRepository>();
+        services.AddScoped<IAppointmentRepository, AppointmentRepository>();
+        services.AddScoped<IAppointmentServiceSelectionRepository, AppointmentServiceSelectionRepository>();
+        services.AddScoped<IBarberRepository, BarberRepository>();
+        services.AddScoped<IBarbershopRepository, BarbershopRepository>();
+        services.AddScoped<IClientRepository, ClientRepository>();
+        services.AddScoped<IReviewRepository, ReviewRepository>();
+        services.AddScoped<IServiceOfferingRepository, ServiceOfferingRepository>();
+        services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IPasswordHasherService, PasswordHasherService>();
         services.AddScoped<IJwtTokenService, JwtTokenService>();
 

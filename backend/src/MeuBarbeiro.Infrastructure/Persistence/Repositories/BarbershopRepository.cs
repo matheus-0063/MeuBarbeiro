@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace MeuBarbeiro.Infrastructure.Persistence.Repositories;
 
-public class SqliteBarbershopRepository(AppDbContext dbContext) : IBarbershopRepository
+public class BarbershopRepository(AppDbContext dbContext) : IBarbershopRepository
 {
     public async Task AddAsync(Barbershop barbershop, CancellationToken cancellationToken = default)
     {
