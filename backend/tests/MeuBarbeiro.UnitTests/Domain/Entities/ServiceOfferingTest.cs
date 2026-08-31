@@ -1,4 +1,5 @@
 using FluentAssertions;
+using MeuBarbeiro.Domain.Exceptions;
 using MeuBarbeiro.UnitTests.TestBuilder;
 
 namespace MeuBarbeiro.UnitTests.Domain.Entities;
@@ -10,6 +11,10 @@ public class ServiceOfferingTest
     {
         // Arrange
         var serviceOffering = new ServiceOfferingBuilder()
+            .WithName("Corte")
+            .WithDescription("Corte na preferencia do cliente")
+            .WithPrice(50.0m)
+            .WithDurationMinutes(30)
             .Build();
 
         // Assert
@@ -25,6 +30,6 @@ public class ServiceOfferingTest
             .Build();
 
         // Assert
-        func.Should().Throw<ArgumentException>();
+        func.Should().Throw<ServiceOfferingValidationException>();
     }
 }

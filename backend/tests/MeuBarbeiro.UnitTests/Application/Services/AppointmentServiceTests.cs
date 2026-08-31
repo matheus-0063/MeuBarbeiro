@@ -64,6 +64,8 @@ public class AppointmentServiceTests
         var barber = new BarberBuilder()
             .WithUserId(Guid.NewGuid())
             .Build();
+        
+        barber.AssignBarbershop(barbershop.Id);
 
         var corte = new ServiceOfferingBuilder()
             .WithName("Corte")
@@ -83,14 +85,12 @@ public class AppointmentServiceTests
 
         #endregion
 
-        IReadOnlyCollection<Barber> barbers = [barber];
-
         var listServiceOffering = new List<ServiceOffering> { corte, barba };
-        var request = CreateAppointmentRequestDto(barbershop, listServiceOffering);
+        var request = CreateAppointmentRequestDto(barbershop, barber.Id, listServiceOffering);
 
         _mockBarberRepository
-            .Setup(x => x.ListByBarbershopAsync(request.BarbershopId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(barbers);
+            .Setup(x => x.GetByIdAsync(request.BarberId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(barber);
 
         _mockServiceOfferingRepository
             .Setup(x => x.ListByIdsAsync(request.ServiceIds, It.IsAny<CancellationToken>()))
@@ -108,13 +108,14 @@ public class AppointmentServiceTests
             .Returns(Task.CompletedTask);
 
         // Act
+        
         var result = await _service.CreateAppointment(request, client.Id);
 
         // Assert
         result.ValidationResult.IsValid.Should().BeTrue();
         result.Data.Should().NotBeEmpty();
 
-        _mockBarberRepository.Verify(x => x.ListByBarbershopAsync(request.BarbershopId, It.IsAny<CancellationToken>()),
+        _mockBarberRepository.Verify(x => x.GetByIdAsync(request.BarberId, It.IsAny<CancellationToken>()),
             Times.Once);
         _mockServiceOfferingRepository.Verify(x => x.ListByIdsAsync(request.ServiceIds, It.IsAny<CancellationToken>()),
             Times.Once);
@@ -136,7 +137,7 @@ public class AppointmentServiceTests
             Times.Once);
     }
 
-    private static CreateAppointmentRequestDto CreateAppointmentRequestDto(Barbershop barbershop,
+    private static CreateAppointmentRequestDto CreateAppointmentRequestDto(Barbershop barbershop, Guid barberId,
         List<ServiceOffering> serviceOfferings)
     {
         var serviceIds = new List<Guid>
@@ -148,6 +149,7 @@ public class AppointmentServiceTests
         return new CreateAppointmentRequestDto
         {
             BarbershopId = barbershop.Id,
+            BarberId = barberId,
             ServiceIds = serviceIds,
             ScheduledAtUtc = DateTime.UtcNow.AddDays(1)
         };
