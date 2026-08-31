@@ -1,10 +1,13 @@
+using FluentValidation.Results;
 using MeuBarbeiro.Application.Abstractions.Persistence;
 using MeuBarbeiro.Application.Abstractions.Services;
 using MeuBarbeiro.Application.DTOs.Barbers;
 using MeuBarbeiro.Application.DTOs.Barbershop;
+using MeuBarbeiro.Application.DTOs.Services;
 using MeuBarbeiro.Application.DTOs.Shared;
 using MeuBarbeiro.Application.Mappings.Barbers;
 using MeuBarbeiro.Application.Mappings.Barbershops;
+using MeuBarbeiro.Domain.Exceptions;
 
 namespace MeuBarbeiro.Application.Services;
 
@@ -50,7 +53,14 @@ public class BarbershopService(
         var barber = await barberRepository.GetByIdAsync(barberId, cancellationToken);
         if (barber == null) return ServiceResult.NotFound();
 
-        barber.AssignBarbershop(barbershopId);
+        try
+        {
+            barber.AssignBarbershop(barbershopId);
+        }
+        catch (BarberBelongsAnotherBarbershopException ex)
+        {
+            return DomainFailure("barberId", ex.Message);
+        }
 
         await barberRepository.UpdateAsync(barber, cancellationToken);
         return ServiceResult.Success();
@@ -67,7 +77,14 @@ public class BarbershopService(
         var barber = await barberRepository.GetByIdAsync(barberId, cancellationToken);
         if (barber == null) return ServiceResult.NotFound();
 
-        barber.RemoveFromBarbershop(barbershopId);
+        try
+        {
+            barber.RemoveFromBarbershop(barbershopId);
+        }
+        catch (BarberDoesNotBelongBarbershopException ex)
+        {
+            return DomainFailure("barberId", ex.Message);
+        }
 
         await barberRepository.UpdateAsync(barber, cancellationToken);
         return ServiceResult.Success();
@@ -87,27 +104,36 @@ public class BarbershopService(
     public async Task<ServiceResult<IEnumerable<BarberResponseDto>>> ListBarbersToBarbershop(Guid barbershopId,
         CancellationToken cancellationToken = default)
     {
+        var validationResults = new ValidationResult();
+        
         var barbershop = await barbershopRepository.GetByIdAsync(barbershopId, cancellationToken);
         if (barbershop == null) return ServiceResult<IEnumerable<BarberResponseDto>>.NotFound();
 
         var barbers = await barberRepository.ListByBarbershopAsync(barbershopId, cancellationToken);
-        if (!barbers.Any()) return ServiceResult<IEnumerable<BarberResponseDto>>.NotFound();
+        if (!barbers.Any()) return ServiceResult<IEnumerable<BarberResponseDto>>.Success([]);
 
         var userIds = barbers.Select(b => b.UserId).Distinct();
 
         var users = await userRepository.ListByIdsAsync(userIds, cancellationToken);
         if (!users.Any()) return ServiceResult<IEnumerable<BarberResponseDto>>.NotFound();
 
-        var usersById = users.ToDictionary(
-            user => user.Id,
-            user => user
-        );
+        var usersById = users.ToDictionary(user => user.Id);
+        
+        var userIdsNotFound = barbers
+            .Select(barber => barber.UserId)
+            .Where(userId => !usersById.ContainsKey(userId))
+            .Distinct()
+            .ToArray();
 
-        var response = barbers.Select(barber =>
+        if (userIdsNotFound.Length > 0)
         {
-            var user = usersById[barber.UserId];
-            return barber.ToDto(user.Name);
-        }).ToList();
+            validationResults.Errors.Add(new ValidationFailure("barberId", "Barbeiro nao tem usuario atrelado"));
+            return ServiceResult<IEnumerable<BarberResponseDto>>.Failure(validationResults);
+        }
+
+        var response = barbers
+            .Select(barber => barber.ToDto(usersById[barber.UserId].Name))
+            .ToList();
 
         return ServiceResult<IEnumerable<BarberResponseDto>>.Success(response);
     }
@@ -129,5 +155,13 @@ public class BarbershopService(
         var response = barbershops.Select(barbershop => barbershop.ToResponseDto());
 
         return ServiceResult<IEnumerable<BarbershopResponseDto>>.Success(response);
+    }
+
+    private static ServiceResult<ServiceResponseDto> DomainFailure(string propertyName, string message)
+    {
+        var validationResults = new ValidationResult();
+
+        validationResults.Errors.Add(new ValidationFailure(propertyName, message));
+        return ServiceResult<ServiceResponseDto>.Failure(validationResults);
     }
 }

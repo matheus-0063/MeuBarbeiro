@@ -18,7 +18,7 @@ public class ServicesController(
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> AddServices([FromBody] CreateServicesRequestDto request, Guid barbershopId,
+    public async Task<IActionResult> AddServices([FromBody] CreateServicesRequestDto request, [FromRoute] Guid barbershopId,
         CancellationToken cancellationToken)
     {
         if (!TryGetAuthenticatedUserId(out var userId))
@@ -34,7 +34,7 @@ public class ServicesController(
 
         return ResponseHasErros(result.ValidationResult)
             ? ValidationProblem()
-            : CreatedAtAction(nameof(GetService), new { result.Data?.Id });
+            : CreatedAtAction(nameof(GetService), new {version = "1.0", serviceId = result.Data!.Id}, result.Data);
     }
 
     [HttpPatch("barbershop/{barbershopId}/services/{serviceId}")]
@@ -45,7 +45,7 @@ public class ServicesController(
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateServices([FromBody] UpdateServicesRequestDto request,
-        [FromQuery] Guid barbershopId, [FromQuery] Guid serviceId,
+        [FromRoute] Guid barbershopId, [FromRoute] Guid serviceId,
         CancellationToken cancellationToken)
     {
         if (!TryGetAuthenticatedUserId(out var userId)) return Unauthorized();
@@ -66,7 +66,7 @@ public class ServicesController(
     [HttpGet("{serviceId}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetService([FromQuery] Guid serviceId, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetService([FromRoute] Guid serviceId, CancellationToken cancellationToken)
     {
         var result = await servicesService.GetService(serviceId, cancellationToken);
 
@@ -79,7 +79,7 @@ public class ServicesController(
     [HttpGet]
     [ProducesResponseType<IEnumerable<ServiceResponseDto>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetServices([FromQuery] Guid barbershopId,
+    public async Task<IActionResult> GetServices(Guid barbershopId,
         CancellationToken cancellationToken = default)
     {
         var result = await servicesService.GetServices(barbershopId, cancellationToken);
