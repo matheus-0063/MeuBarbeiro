@@ -5,7 +5,7 @@ namespace MeuBarbeiro.UnitTests.TestBuilder;
 
 public class UserBuilder
 {
-    private DateTime _createdAt = DateTime.Now;
+    private DateTime _createdAt = DateTime.UtcNow;
     private string _email = string.Empty;
     private string _name = string.Empty;
     private string _passwordHash = string.Empty;

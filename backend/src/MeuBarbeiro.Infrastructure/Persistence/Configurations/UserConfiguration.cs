@@ -29,6 +29,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .IsRequired();
 
         builder.Property(user => user.CreateAt)
+            .HasColumnType("timestamp with time zone")
             .IsRequired();
 
         builder.HasIndex(user => user.Email)

@@ -76,6 +76,6 @@ public class UserTests
             .Build();
 
         // Assert
-        user.CreateAt.Should().BeCloseTo(DateTime.Now, TimeSpan.FromSeconds(1));
+        user.CreateAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(1));
     }
 }

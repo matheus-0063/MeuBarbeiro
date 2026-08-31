@@ -24,6 +24,7 @@ public class EventProcessingAuditConfiguration : IEntityTypeConfiguration<EventP
             .IsRequired();
 
         builder.Property(audit => audit.ProcessedAtUtc)
+            .HasColumnType("timestamp with time zone")
             .IsRequired();
 
         builder.Property(audit => audit.Status)

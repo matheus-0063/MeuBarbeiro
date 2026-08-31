@@ -15,7 +15,7 @@ public class User
         Email = email;
         PasswordHash = passwordHash;
         Role = role;
-        CreateAt = DateTime.Now;
+        CreateAt = DateTime.UtcNow;
     }
 
     public Guid Id { get; private set; }
