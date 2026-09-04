@@ -1,7 +1,9 @@
 using FluentValidation.Results;
+using MeuBarbeiro.Application.Abstractions.Caching;
 using MeuBarbeiro.Application.Abstractions.Messaging;
 using MeuBarbeiro.Application.Abstractions.Persistence;
 using MeuBarbeiro.Application.Abstractions.Services;
+using MeuBarbeiro.Application.Caching;
 using MeuBarbeiro.Application.DTOs.Appointments;
 using MeuBarbeiro.Application.DTOs.Shared;
 using MeuBarbeiro.Application.Mappings.Appointments;
@@ -21,7 +23,8 @@ public class AppointmentService(
     IReviewRepository reviewRepository,
     IServiceOfferingRepository serviceOfferingRepository,
     IUserRepository userRepository,
-    IEventPublisher eventPublisher) : IAppointmentService
+    IEventPublisher eventPublisher,
+    ICacheService cacheService) : IAppointmentService
 {
     public async Task<ServiceResult<Guid>> CreateAppointment(CreateAppointmentRequestDto request, Guid clientId,
         CancellationToken cancellationToken = default)
@@ -102,7 +105,7 @@ public class AppointmentService(
             return ServiceResult<AppointmentReviewResponseDto>.Failure(validationResult);
         }
 
-        if (request.Stars < 1 || request.Stars > 5)
+        if (request.Stars is < 1 or > 5)
         {
             var validationResult = new ValidationResult();
             validationResult.Errors.Add(new ValidationFailure(nameof(request.Stars),
@@ -130,15 +133,25 @@ public class AppointmentService(
         };
 
         await reviewRepository.AddAsync(review, cancellationToken);
+        await cacheService.RemoveAsync(CacheKeys.Barbershop(appointment.BarbershopId), cancellationToken);
 
         var barbershop = await barbershopRepository.GetByIdAsync(appointment.BarbershopId, cancellationToken);
-        if (barbershop != null)
+        if (barbershop == null)
         {
-            var averageStars =
-                await reviewRepository.GetAverageStarsByBarbershopAsync(appointment.BarbershopId, cancellationToken);
-            barbershop.UpdateAverageRating(averageStars ?? request.Stars);
-            await barbershopRepository.UpdateAsync(barbershop, cancellationToken);
+            return ServiceResult<AppointmentReviewResponseDto>.Success(new AppointmentReviewResponseDto
+            {
+                Id = review.Id,
+                AppointmentId = review.AppointmentId,
+                Stars = review.Stars,
+                CreatedAtUtc = review.CreatedAtUtc
+            });
         }
+
+        var averageStars = await reviewRepository.GetAverageStarsByBarbershopAsync(appointment.BarbershopId, cancellationToken);
+        
+        barbershop.UpdateAverageRating(averageStars ?? request.Stars);
+        
+        await barbershopRepository.UpdateAsync(barbershop, cancellationToken);
 
         return ServiceResult<AppointmentReviewResponseDto>.Success(new AppointmentReviewResponseDto
         {
