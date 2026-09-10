@@ -1,4 +1,5 @@
 using FluentAssertions;
+using MeuBarbeiro.Application.Abstractions.Caching;
 using MeuBarbeiro.Application.Abstractions.Persistence;
 using MeuBarbeiro.Application.DTOs.Services;
 using MeuBarbeiro.Application.Services;
@@ -13,10 +14,11 @@ public class ServicesServiceTests
     private readonly Mock<IBarbershopRepository> _barbershopRepositoryMock = new();
     private readonly ServicesService _service;
     private readonly Mock<IServiceOfferingRepository> _serviceOfferingRepositoryMock = new();
+    private readonly Mock<ICacheService> _cacheServiceMock = new();
 
     public ServicesServiceTests()
     {
-        _service = new ServicesService(_barbershopRepositoryMock.Object, _serviceOfferingRepositoryMock.Object);
+        _service = new ServicesService(_barbershopRepositoryMock.Object, _serviceOfferingRepositoryMock.Object, _cacheServiceMock.Object);
     }
 
     [Fact]

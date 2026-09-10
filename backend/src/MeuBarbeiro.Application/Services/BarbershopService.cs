@@ -1,6 +1,8 @@
 using FluentValidation.Results;
+using MeuBarbeiro.Application.Abstractions.Caching;
 using MeuBarbeiro.Application.Abstractions.Persistence;
 using MeuBarbeiro.Application.Abstractions.Services;
+using MeuBarbeiro.Application.Caching;
 using MeuBarbeiro.Application.DTOs.Barbers;
 using MeuBarbeiro.Application.DTOs.Barbershop;
 using MeuBarbeiro.Application.DTOs.Services;
@@ -14,7 +16,8 @@ namespace MeuBarbeiro.Application.Services;
 public class BarbershopService(
     IBarbershopRepository barbershopRepository,
     IBarberRepository barberRepository,
-    IUserRepository userRepository)
+    IUserRepository userRepository,
+    ICacheService cacheService)
     : IBarbershopService
 {
     public async Task<ServiceResult<BarbershopResponseDto>> CreateBarbershop(CreateBarbershopRequestDto request,
@@ -31,6 +34,7 @@ public class BarbershopService(
         Guid barbershopOwnerId,
         CancellationToken cancellationToken = default)
     {
+        var key = CacheKeys.Barbershop(barbershopId);
         var barbershop = await barbershopRepository.GetByIdAsync(barbershopId, cancellationToken);
 
         if (barbershop == null) return ServiceResult.NotFound();
@@ -39,6 +43,8 @@ public class BarbershopService(
         barbershop.UpdateDetails(request.Name, request.City, request.Address, request.Description);
 
         await barbershopRepository.UpdateAsync(barbershop, cancellationToken);
+        await cacheService.RemoveAsync(key, cancellationToken);
+        
         return ServiceResult.Success();
     }
 
@@ -141,11 +147,20 @@ public class BarbershopService(
     public async Task<ServiceResult<BarbershopResponseDto>> GetBarbershop(Guid id,
         CancellationToken cancellationToken = default)
     {
+        var key = CacheKeys.Barbershop(id);
+        
+        var cached = await cacheService.GetAsync<BarbershopResponseDto>(key, cancellationToken);
+        if (cached != null) 
+            return ServiceResult<BarbershopResponseDto>.Success(cached);
+        
         var barbershop = await barbershopRepository.GetByIdAsync(id, cancellationToken);
+        if (barbershop == null) 
+            return ServiceResult<BarbershopResponseDto>.NotFound();
 
-        return barbershop == null
-            ? ServiceResult<BarbershopResponseDto>.NotFound()
-            : ServiceResult<BarbershopResponseDto>.Success(barbershop.ToResponseDto());
+        var barbershopResponse = barbershop.ToResponseDto();
+        await cacheService.SetAsync(key, barbershopResponse, TimeSpan.FromMinutes(5), cancellationToken);
+        
+        return ServiceResult<BarbershopResponseDto>.Success(barbershopResponse);
     }
 
     public async Task<ServiceResult<IEnumerable<BarbershopResponseDto>>> GetBarbershops(string? city = null,

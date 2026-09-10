@@ -1,6 +1,8 @@
+using MeuBarbeiro.Application.Abstractions.Caching;
 using MeuBarbeiro.Application.Abstractions.Messaging;
 using MeuBarbeiro.Application.Abstractions.Persistence;
 using MeuBarbeiro.Application.Abstractions.Services;
+using MeuBarbeiro.Infrastructure.Caching;
 using MeuBarbeiro.Infrastructure.Messaging;
 using MeuBarbeiro.Infrastructure.Persistence;
 using MeuBarbeiro.Infrastructure.Persistence.Repositories;
@@ -18,7 +20,8 @@ public static class DependencyInjection
     {
         services.AddDbContext<AppDbContext>(options =>
             options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")
-                ?? throw new InvalidOperationException("Connection string 'DefaultConnection' não configurada.")));
+                              ?? throw new InvalidOperationException(
+                                  "Connection string 'DefaultConnection' não configurada.")));
 
         services.AddSingleton<DatabaseSchemaInitializer>();
 
@@ -39,6 +42,17 @@ public static class DependencyInjection
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IPasswordHasherService, PasswordHasherService>();
         services.AddScoped<IJwtTokenService, JwtTokenService>();
+
+        services.AddStackExchangeRedisCache(options =>
+        {
+            options.Configuration = configuration["Redis.Configuration"]
+                                    ?? throw new InvalidOperationException("Redis configuration could not be found.");
+            
+            options.InstanceName = configuration["Redis.InstanceName"]
+                ?? throw new InvalidOperationException("Redis instance name could not be found.");
+        });
+
+        services.AddSingleton<ICacheService, RedisCacheService>();
 
         return services;
     }

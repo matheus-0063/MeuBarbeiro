@@ -1,5 +1,6 @@
 using FluentAssertions;
 using FluentValidation.Results;
+using MeuBarbeiro.Application.Abstractions.Caching;
 using MeuBarbeiro.Application.Abstractions.Messaging;
 using MeuBarbeiro.Application.Abstractions.Persistence;
 using MeuBarbeiro.Application.DTOs.Appointments;
@@ -23,6 +24,7 @@ public class AppointmentServiceTests
     private readonly Mock<IAppointmentServiceSelectionRepository> _mockSelectionRepository;
     private readonly Mock<IServiceOfferingRepository> _mockServiceOfferingRepository;
     private readonly Mock<IUserRepository> _mockUserRepository;
+    private readonly Mock<ICacheService> _mockCacheService;
 
     private readonly AppointmentService _service;
 
@@ -37,11 +39,12 @@ public class AppointmentServiceTests
         _mockServiceOfferingRepository = new Mock<IServiceOfferingRepository>();
         _mockUserRepository = new Mock<IUserRepository>();
         _mockEventPublisher = new Mock<IEventPublisher>();
+        _mockCacheService = new Mock<ICacheService>();
 
         _service = new AppointmentService(_mockAppointmentRepository.Object, _mockSelectionRepository.Object,
             _mockBarberRepository.Object, _mockBarbershopRepository.Object,
             _mockClientRepository.Object, _mockReviewRepository.Object, _mockServiceOfferingRepository.Object,
-            _mockUserRepository.Object, _mockEventPublisher.Object);
+            _mockUserRepository.Object, _mockEventPublisher.Object, _mockCacheService.Object);
     }
 
     [Fact]

@@ -107,7 +107,6 @@ public class BarbershopController(
         if (!TryGetAuthenticatedUserId(out var userId)) return Unauthorized();
 
         var result = await barbershopService.ListBarbershopsToOwner(userId, cancellationToken);
-
         if (result.IsNotFound) return NotFound();
 
         return ResponseHasErros(result.ValidationResult)
@@ -138,7 +137,6 @@ public class BarbershopController(
         CancellationToken cancellationToken = default)
     {
         var result = await barbershopService.ListBarbersToBarbershop(barbershopId, cancellationToken);
-
         if (result.IsNotFound) return NotFound();
 
         return ResponseHasErros(result.ValidationResult)
@@ -153,10 +151,10 @@ public class BarbershopController(
     public async Task<IActionResult> GetBarbershop(Guid barbershopId, CancellationToken cancellationToken)
     {
         var result = await barbershopService.GetBarbershop(barbershopId, cancellationToken);
-
         if (result.IsNotFound) return NotFound();
+        
         return ResponseHasErros(result.ValidationResult)
             ? ValidationProblem()
-            : Ok(result);
+            : Ok(result.Data);
     }
 }
