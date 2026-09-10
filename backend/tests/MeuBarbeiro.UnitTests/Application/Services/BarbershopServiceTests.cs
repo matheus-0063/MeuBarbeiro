@@ -1,4 +1,5 @@
 using FluentAssertions;
+using MeuBarbeiro.Application.Abstractions.Caching;
 using MeuBarbeiro.Application.Abstractions.Persistence;
 using MeuBarbeiro.Application.DTOs.Barbershop;
 using MeuBarbeiro.Application.Services;
@@ -14,15 +15,17 @@ public class BarbershopServiceTests
     private readonly Mock<IBarberRepository> _mockBarberRepository;
     private readonly Mock<IBarbershopRepository> _mockBarbershopRepository;
     private readonly Mock<IUserRepository> _mockUserRepository;
+    private readonly Mock<ICacheService> _mockCacheService;
 
     public BarbershopServiceTests()
     {
         _mockBarbershopRepository = new Mock<IBarbershopRepository>();
         _mockBarberRepository = new Mock<IBarberRepository>();
         _mockUserRepository = new Mock<IUserRepository>();
+        _mockCacheService = new Mock<ICacheService>();
 
         _barbershopService = new BarbershopService(_mockBarbershopRepository.Object, _mockBarberRepository.Object,
-            _mockUserRepository.Object);
+            _mockUserRepository.Object, _mockCacheService.Object);
     }
 
     [Fact]
