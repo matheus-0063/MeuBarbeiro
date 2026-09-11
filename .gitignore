@@ -5,19 +5,10 @@ obj/
 .vs/
 .vscode/
 
-# Flutter / Dart
-.dart_tool/
-.flutter-plugins
-.flutter-plugins-dependencies
-.packages
-build/
-
-# Android / iOS generated
-**/android/.gradle/
-**/android/local.properties
-**/ios/Pods/
-**/ios/.symlinks/
-**/macos/Pods/
+# Frontend web
+frontend/node_modules/
+frontend/dist/
+*.tsbuildinfo
 
 # Environment
 .env
