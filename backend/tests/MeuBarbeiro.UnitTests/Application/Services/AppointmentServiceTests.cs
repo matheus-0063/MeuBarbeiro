@@ -67,7 +67,7 @@ public class AppointmentServiceTests
         var barber = new BarberBuilder()
             .WithUserId(Guid.NewGuid())
             .Build();
-        
+
         barber.AssignBarbershop(barbershop.Id);
 
         var corte = new ServiceOfferingBuilder()
@@ -111,7 +111,7 @@ public class AppointmentServiceTests
             .Returns(Task.CompletedTask);
 
         // Act
-        
+
         var result = await _service.CreateAppointment(request, client.Id);
 
         // Assert

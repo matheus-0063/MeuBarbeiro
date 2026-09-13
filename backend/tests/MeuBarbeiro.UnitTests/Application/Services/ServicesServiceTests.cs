@@ -18,7 +18,8 @@ public class ServicesServiceTests
 
     public ServicesServiceTests()
     {
-        _service = new ServicesService(_barbershopRepositoryMock.Object, _serviceOfferingRepositoryMock.Object, _cacheServiceMock.Object);
+        _service = new ServicesService(_barbershopRepositoryMock.Object, _serviceOfferingRepositoryMock.Object,
+            _cacheServiceMock.Object);
     }
 
     [Fact]
