@@ -4,6 +4,7 @@ obj/
 .idea/
 .vs/
 .vscode/
+**/Properties/launchSettings.json
 
 # Frontend web
 frontend/node_modules/
