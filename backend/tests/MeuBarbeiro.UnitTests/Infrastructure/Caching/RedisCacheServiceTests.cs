@@ -82,7 +82,7 @@ public class RedisCacheServiceTests
             .ThrowsAsync(new Exception("Erro ao obter dados do cache"));
         
         // Act
-        var cached = _redisCacheService.GetAsync<BarbershopResponseDto>(key);
+        var cached = await _redisCacheService.GetAsync<BarbershopResponseDto>(key);
         
         // Assert
         cached.Should().BeNull();
