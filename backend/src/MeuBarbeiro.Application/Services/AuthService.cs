@@ -62,7 +62,7 @@ public class AuthService(
 
         var passwordHash = passwordHasher.Hash(request.Password);
 
-        var user = new User(request.Name, request.Email, passwordHash, UserRole.Barber);
+        var user = new User(request.Name, request.Email, passwordHash, UserRole.BarbershopOwner);
         await userRepository.AddAsync(user, cancellationToken);
 
         var token = jwtTokenService.GenerateToken(user);
